@@ -1,4 +1,4 @@
-import { BudgetCategory, BudgetItem } from "@/src/types";
+import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
 import { ProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { ChevronDown } from "lucide-react";
 import { BudgetCategorySection } from "./BudgetCategorySection";
@@ -18,7 +18,7 @@ interface BudgetSpreadsheetProps {
   onDeleteRow: (id: string) => void;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
-  onUpdate: (id: string, field: keyof BudgetItem, value: any) => void;
+  onUpdate: TBudgetItemUpdater;
 }
 
 export function BudgetSpreadsheet({

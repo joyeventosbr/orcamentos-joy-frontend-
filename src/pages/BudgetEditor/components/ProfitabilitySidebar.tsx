@@ -1,12 +1,12 @@
 import { ProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { formatCurrencyBRL } from "@/src/lib/formatters";
-import { BudgetItem } from "@/src/types";
+import { BudgetItem, TBudgetItemUpdater } from "@/src/types";
 
 interface ProfitabilitySidebarProps {
   isOpen: boolean;
   summary: ProfitabilitySummary;
   items: BudgetItem[];
-  onUpdateItem: (id: string, field: keyof BudgetItem, value: any) => void;
+  onUpdateItem: TBudgetItemUpdater;
 }
 
 

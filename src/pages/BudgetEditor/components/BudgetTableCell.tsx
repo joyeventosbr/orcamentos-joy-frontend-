@@ -1,5 +1,5 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
-import { BILLING_TYPE_OPTIONS, BudgetItem } from "@/src/types";
+import { BILLING_TYPE_OPTIONS, BudgetItem, TBudgetItemUpdater } from "@/src/types";
 import React from "react";
 
 interface BudgetTableCellProps {
@@ -10,7 +10,7 @@ interface BudgetTableCellProps {
   editingCell: { id: string; field: keyof BudgetItem } | null;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
-  onUpdate: (id: string, field: keyof BudgetItem, value: any) => void;
+  onUpdate: TBudgetItemUpdater;
 }
 
 const CURRENCY_FIELDS = ["unitPrice", "total", "paymentAdvance", "payment30d", "payment45d", "payment60d", "payment90d", "fornecedorValue"];

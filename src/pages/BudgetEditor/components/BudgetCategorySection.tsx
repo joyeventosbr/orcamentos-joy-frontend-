@@ -1,7 +1,7 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
 import { calculatePaymentScheduleTotals, PAYMENT_SCHEDULE_COLUMNS } from "@/src/hooks/usePaymentScheduleSummary";
 import { ProfitabilityCategory } from "@/src/hooks/useProfitabilitySummary";
-import { BudgetCategory, BudgetItem } from "@/src/types";
+import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import React from "react";
 import { BudgetTableCell } from "./BudgetTableCell";
@@ -13,7 +13,7 @@ interface BudgetCategorySectionProps {
   isExpanded: boolean;
   allowInternalStyle?: boolean;
   isLocked?: boolean;
-  categoryProfitability?: import("@/src/hooks/useProfitabilitySummary").ProfitabilityCategory;
+  categoryProfitability?: ProfitabilityCategory;
   editingCell: { id: string; field: keyof BudgetItem } | null;
   onToggle: (categoryId: string) => void;
   onAddRow: (categoryId: string) => void;
@@ -21,7 +21,7 @@ interface BudgetCategorySectionProps {
   onDeleteRow: (id: string) => void;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
-  onUpdate: (id: string, field: keyof BudgetItem, value: any) => void;
+  onUpdate: TBudgetItemUpdater;
 }
 
 export function BudgetCategorySection({

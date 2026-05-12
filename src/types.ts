@@ -102,6 +102,8 @@ export interface Budget {
   honorariumPercentage?: HonorariumPercentage;
 }
 
+export type TBudgetItemUpdater = (id: string, field: keyof BudgetItem, value: string | number) => void;
+
 export function getBudgetFolder(budget: Budget): BudgetFolder {
   if (budget.status === "Aprovado") return "aprovados";
   return budget.phase === "producao" ? "producao" : "concorrencia";
