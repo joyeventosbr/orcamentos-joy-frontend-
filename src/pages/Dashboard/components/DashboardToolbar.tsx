@@ -1,53 +1,64 @@
 import { Input } from "@/src/components/ui/Input/Input";
-import { BudgetStatus } from "@/src/types";
+import { BudgetFolder } from "@/src/types";
 import { LayoutGrid, List, Search } from "lucide-react";
 
-const STATUS_FILTER_OPTIONS = ["Todos", "Rascunho", "Em andamento", "Aprovado"] as const;
+const FOLDER_TABS: { key: BudgetFolder; label: string }[] = [
+  { key: "concorrencia", label: "Concorrência" },
+  { key: "aprovados", label: "Aprovados" },
+  { key: "producao", label: "Produção" },
+];
 
 interface DashboardToolbarProps {
-  isProjectView: boolean;
+  level: "clients" | "jobs" | "budgets";
   searchQuery: string;
-  statusFilter: BudgetStatus | "Todos";
+  activeFolder: BudgetFolder;
   viewMode: "grid" | "table";
   onSearchChange: (query: string) => void;
-  onStatusFilterChange: (status: BudgetStatus | "Todos") => void;
+  onFolderChange: (folder: BudgetFolder) => void;
   onViewModeChange: (mode: "grid" | "table") => void;
 }
 
 export function DashboardToolbar({
-  isProjectView,
+  level,
   searchQuery,
-  statusFilter,
+  activeFolder,
   viewMode,
   onSearchChange,
-  onStatusFilterChange,
+  onFolderChange,
   onViewModeChange,
 }: DashboardToolbarProps) {
+  const searchPlaceholder =
+    level === "clients"
+      ? "Buscar clientes..."
+      : level === "jobs"
+        ? "Buscar jobs..."
+        : "Buscar orçamentos...";
+
   return (
     <div className="px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center flex-shrink-0">
       <div className="flex items-center gap-4 w-full sm:w-auto">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <Input
-            placeholder={isProjectView ? "Buscar projetos..." : "Buscar orçamentos..."}
+            placeholder={searchPlaceholder}
             className="pl-9"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        {!isProjectView && (
+        {level === "budgets" && (
           <div className="flex bg-gray-100 p-1 rounded-lg">
-            {STATUS_FILTER_OPTIONS.map((status) => (
+            {FOLDER_TABS.map((tab) => (
               <button
-                key={status}
-                onClick={() => onStatusFilterChange(status === "Todos" ? "Todos" : status as BudgetStatus)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  statusFilter === status
+                key={tab.key}
+                onClick={() => onFolderChange(tab.key)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                  activeFolder === tab.key
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-900"
                 }`}
               >
-                {status}
+                {tab.label}
               </button>
             ))}
           </div>

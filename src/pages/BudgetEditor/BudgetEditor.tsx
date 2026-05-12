@@ -2,6 +2,7 @@ import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } 
 import { useBudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
 import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
 import { usePaymentScheduleSummary } from "@/src/hooks/usePaymentScheduleSummary";
+import { useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { BUDGET_CATEGORIES, Budget, BudgetItem, HonorariumPercentage } from "@/src/types";
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -10,14 +11,15 @@ import { useAppData } from "../../context/AppDataContext";
 import { BudgetEditorHeader } from "./components/BudgetEditorHeader";
 import { BudgetSpreadsheet } from "./components/BudgetSpreadsheet";
 import { BudgetSummaryPanel } from "./components/BudgetSummaryPanel";
+import { ProfitabilitySidebar } from "./components/ProfitabilitySidebar";
 import { DeleteCategoryModal } from "./components/DeleteCategoryModal";
+import { ApprovalConfirmModal } from "./components/ApprovalConfirmModal";
 
 export function BudgetEditor() {
   const navigate = useNavigate();
   const { budgetId } = useParams<{ budgetId: string }>();
-  const { budgets, isLoading, updateBudget } = useAppData();
+  const { budgets, isLoading, updateBudget, approveBudget } = useAppData();
 
-  // Find initial budget from context
   const initialBudget = useMemo(() => {
     return budgets.find((b) => b.id === budgetId) || budgets[0] || null;
   }, [budgets, budgetId]);
@@ -28,20 +30,21 @@ export function BudgetEditor() {
     id: string;
     field: keyof BudgetItem;
   } | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeSidebar, setActiveSidebar] = useState<"summary" | "profitability" | null>("summary");
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
 
-  // Update effect if budget changes externally or loads
   useEffect(() => {
     if (initialBudget) {
       setBudget(initialBudget);
     }
   }, [initialBudget]);
 
+  const isLocked = budget?.isLocked ?? false;
   const budgetItems = budget?.items ?? [];
   const primaryBudgetItems = budgetItems.filter((item) => !item.categoryId.startsWith("2."));
 
-  // Group items by categoryId to maintain the 1.1 -> 1.12 order
   const groupedItems = useMemo(() => {
     const groups: Record<string, BudgetItem[]> = {};
     budgetItems.forEach((item) => {
@@ -51,7 +54,6 @@ export function BudgetEditor() {
     return groups;
   }, [budgetItems]);
 
-  // Initialize expanded state for categories that have items
   React.useEffect(() => {
     const newExpanded = { ...expandedCategories };
     let changed = false;
@@ -78,13 +80,13 @@ export function BudgetEditor() {
   };
 
   const updateItem = (id: string, field: keyof BudgetItem, value: any) => {
+    if (isLocked) return;
     setBudget((prev) => {
       if (!prev) return prev;
 
       const newItems = prev.items.map((item) => {
         if (item.id === id) {
           const updated = { ...item, [field]: value };
-          // Auto-calculate total if quantity, days or unitPrice changes
           if (field === "quantity" || field === "days" || field === "unitPrice") {
             return recalculateBudgetItemTotal(updated);
           }
@@ -102,7 +104,7 @@ export function BudgetEditor() {
   };
 
   const addRow = (categoryId: string) => {
-    if (!budget) return;
+    if (!budget || isLocked) return;
 
     const categoryItems = budget.items.filter((i) => i.categoryId === categoryId);
     let nextNum = 1;
@@ -125,12 +127,12 @@ export function BudgetEditor() {
       };
     });
 
-    // Auto-expand category and set focus to new row name
     setExpandedCategories((prev) => ({ ...prev, [categoryId]: true }));
     setEditingCell({ id: newItem.id, field: "name" });
   };
 
   const deleteRow = (id: string) => {
+    if (isLocked) return;
     setBudget((prev) => {
       if (!prev) return prev;
 
@@ -144,6 +146,7 @@ export function BudgetEditor() {
   };
 
   const deleteCategory = (categoryId: string) => {
+    if (isLocked) return;
     setCategoryToDelete(categoryId);
   };
 
@@ -164,6 +167,7 @@ export function BudgetEditor() {
   };
 
   const handleCellClick = (id: string, field: keyof BudgetItem) => {
+    if (isLocked) return;
     setEditingCell({ id, field });
   };
 
@@ -172,10 +176,52 @@ export function BudgetEditor() {
   };
 
   const handleBudgetChange = (updates: Partial<Budget>) => {
+    if (isLocked) return;
+
+    if (updates.status === "Aprovado") {
+      if (budget) {
+        const { missingFields, inconsistentItems } = validateBudget(budget);
+        if (missingFields.length > 0) {
+          toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
+          return;
+        }
+        if (inconsistentItems.length > 0) {
+          toast.error(
+            `Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`,
+          );
+          return;
+        }
+      }
+      setApprovalError(null);
+      setShowApprovalModal(true);
+      return;
+    }
+
     setBudget((prev) => (prev ? { ...prev, ...updates } : prev));
   };
 
+  const handleApproveConfirm = async () => {
+    if (!budget) return;
+
+    try {
+      const saved = await handleSave();
+      if (!saved) return;
+      const result = await approveBudget(budget.id);
+      setShowApprovalModal(false);
+      setApprovalError(null);
+
+      if (result.productionCopy) {
+        toast.success("Cópia aprovada criada! Cópia de produção também criada automaticamente.");
+      } else {
+        toast.success("Cópia aprovada de produção criada!");
+      }
+    } catch (err: any) {
+      setApprovalError(err.message || "Erro ao aprovar orçamento.");
+    }
+  };
+
   const updateHonorariumPercentage = (value: HonorariumPercentage) => {
+    if (isLocked) return;
     setBudget((prev) => {
       if (!prev) return prev;
       return { ...prev, honorariumPercentage: value };
@@ -197,17 +243,50 @@ export function BudgetEditor() {
     honorariumPercentage,
   );
   const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
+  const profitabilitySummary = useProfitabilitySummary(
+    primaryBudgetItems,
+    internalServicesSummary.subtotal,
+    internalServicesSummary.subtotal + internalServicesSummary.serviceTax + billingSummary.totalSuppliers,
+  );
   const budgetGrandTotal =
     internalServicesSummary.subtotal + internalServicesSummary.serviceTax + billingSummary.totalSuppliers;
 
-  const handleSave = async () => {
-    if (!budget) return;
+  const validateBudget = (b: Budget) => {
+    const missingFields: string[] = [];
+    if (!b.client?.trim()) missingFields.push("Cliente");
+    if (!b.job?.trim()) missingFields.push("Job");
+    if (!b.deadline) missingFields.push("Prazo de pagamento");
+
+    const inconsistentItems = b.items.filter(
+      (item) => (item.unitPrice > 0 || item.total > 0) && !item.billingType,
+    );
+
+    return { missingFields, inconsistentItems };
+  };
+
+  const handleSave = async (): Promise<boolean> => {
+    if (!budget || isLocked) return false;
+
+    const { missingFields, inconsistentItems } = validateBudget(budget);
+
+    if (missingFields.length > 0) {
+      toast.error(`Preencha os campos obrigatórios: ${missingFields.join(", ")}`);
+      return false;
+    }
+
+    if (inconsistentItems.length > 0) {
+      toast.error(
+        `${inconsistentItems.length} item(ns) com valor preenchido sem tipo de faturamento`,
+      );
+      return false;
+    }
 
     await updateBudget(budget.id, {
       ...budget,
       totalValue: budgetGrandTotal,
     });
     toast.success("Orçamento salvo com sucesso!");
+    return true;
   };
 
   if (isLoading || !budget) {
@@ -225,9 +304,11 @@ export function BudgetEditor() {
     <div className="flex flex-col h-full bg-slate-50">
       <BudgetEditorHeader
         budget={budget}
-        isSidebarOpen={isSidebarOpen}
+        activeSidebar={activeSidebar}
+        isLocked={isLocked}
         onBudgetChange={handleBudgetChange}
-        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onToggleSidebar={() => setActiveSidebar(activeSidebar === "summary" ? null : "summary")}
+        onToggleProfitability={() => setActiveSidebar(activeSidebar === "profitability" ? null : "profitability")}
         onSave={handleSave}
         onNavigateBack={() => navigate("/")}
       />
@@ -241,6 +322,8 @@ export function BudgetEditor() {
             expandedCategories={expandedCategories}
             missingCategories={missingCategories}
             editingCell={editingCell}
+            profitabilitySummary={profitabilitySummary}
+            isLocked={isLocked}
             onToggleCategory={toggleCategory}
             onAddRow={addRow}
             onDeleteCategory={deleteCategory}
@@ -252,7 +335,7 @@ export function BudgetEditor() {
         </div>
 
         <BudgetSummaryPanel
-          isOpen={isSidebarOpen}
+          isOpen={activeSidebar === "summary"}
           grandTotal={budgetGrandTotal}
           billingSummary={billingSummary}
           paymentTotals={paymentScheduleSummary.totals}
@@ -262,12 +345,28 @@ export function BudgetEditor() {
           advancePayment={paymentScheduleSummary.totals.paymentAdvance}
           onHonorariumPercentageChange={updateHonorariumPercentage}
         />
+
+        <ProfitabilitySidebar
+          isOpen={activeSidebar === "profitability"}
+          summary={profitabilitySummary}
+          items={primaryBudgetItems}
+          onUpdateItem={updateItem}
+        />
       </div>
 
       {categoryToDelete && (
         <DeleteCategoryModal
           onConfirm={confirmDeleteCategory}
           onCancel={() => setCategoryToDelete(null)}
+        />
+      )}
+
+      {showApprovalModal && budget && (
+        <ApprovalConfirmModal
+          budget={budget}
+          error={approvalError}
+          onConfirm={handleApproveConfirm}
+          onCancel={() => { setShowApprovalModal(false); setApprovalError(null); }}
         />
       )}
     </div>

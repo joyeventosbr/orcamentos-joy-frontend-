@@ -53,18 +53,18 @@ export function BillingSummaryCard({ summary, formatCurrency }: BillingSummaryCa
         </div>
 
         {hasBillingTypeIssues && (
-          <div className="rounded-lg bg-amber-50 px-3 py-3">
+          <div className="rounded-lg bg-gray-100 px-3 py-3 border border-gray-300">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-6">
               <div>
-                <div className="text-sm font-black leading-snug text-amber-900">
+                <div className="text-sm font-black leading-snug text-gray-900">
                   Preencha o Tipo Faturamento
                 </div>
-                <div className="mt-0.5 text-xs font-semibold leading-snug text-amber-700">
+                <div className="mt-0.5 text-xs font-semibold leading-snug text-gray-600">
                   {summary.billingTypeIssues.itemCount}{" "}
                   {summary.billingTypeIssues.itemCount === 1 ? "item tem" : "itens têm"} valor total sem classificação.
                 </div>
               </div>
-              <div className="shrink-0 text-right text-sm font-black tabular-nums text-amber-900">
+              <div className="shrink-0 text-right text-sm font-black tabular-nums text-gray-900">
                 {formatCurrency(summary.billingTypeIssues.amount)}
               </div>
             </div>

@@ -1,9 +1,9 @@
-import { cn } from "@/src/lib/utils";
+import joyLogo from "@/src/assets/joy-logo.png";
 import { useAuth } from "@/src/context/AuthContext";
+import { cn } from "@/src/lib/utils";
 import { ChevronLeft, ChevronRight, LayoutDashboard, LogOut } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import joyLogo from "@/src/assets/joy-logo.jpeg";
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -15,9 +15,7 @@ export function AppLayout() {
     navigate("/login");
   };
 
-  const navItems = [
-    { icon: LayoutDashboard, label: "Painel", path: "/" },
-  ];
+  const navItems = [{ icon: LayoutDashboard, label: "Painel", path: "/" }];
 
   return (
     <div className="flex h-screen w-full bg-gray-50 text-gray-900 font-sans">
@@ -36,15 +34,12 @@ export function AppLayout() {
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
 
-        <div className="h-16 flex items-center px-6 border-b border-gray-100 overflow-hidden">
-          <div className="flex items-center gap-3 text-brand-primary font-semibold text-lg tracking-tight min-w-max">
-            <img
-              src={joyLogo}
-              alt="Joy Eventos"
-              className="h-9 w-9 flex-shrink-0 rounded-lg object-cover"
-            />
-            {!isCollapsed && <span>Orçamentos</span>}
-          </div>
+        <div className="h-16 flex items-center justify-center border-b border-gray-100 overflow-hidden px-4">
+          {isCollapsed ? (
+            <img src={joyLogo} alt="Joy Eventos" className="h-6 object-contain" />
+          ) : (
+            <img src={joyLogo} alt="Joy Eventos" className="h-9 object-contain" />
+          )}
         </div>
 
         <div className="flex-1 py-6 px-3 flex flex-col gap-1 overflow-y-auto overflow-x-hidden">

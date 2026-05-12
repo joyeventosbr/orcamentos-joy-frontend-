@@ -6,7 +6,8 @@ export type PaymentScheduleField =
   | "payment30d"
   | "payment45d"
   | "payment60d"
-  | "payment90d";
+  | "payment90d"
+  | "payment120d";
 
 export interface PaymentScheduleColumn {
   field: PaymentScheduleField;
@@ -21,6 +22,7 @@ export const PAYMENT_SCHEDULE_COLUMNS: PaymentScheduleColumn[] = [
   { field: "payment45d", label: "45 dias" },
   { field: "payment60d", label: "60 dias" },
   { field: "payment90d", label: "90 dias" },
+  { field: "payment120d", label: "120 dias" },
 ];
 
 export const emptyPaymentScheduleTotals = (): PaymentScheduleTotals => ({
@@ -29,6 +31,7 @@ export const emptyPaymentScheduleTotals = (): PaymentScheduleTotals => ({
   payment45d: 0,
   payment60d: 0,
   payment90d: 0,
+  payment120d: 0,
 });
 
 export function calculatePaymentScheduleTotals(

@@ -85,7 +85,7 @@ export function InternalServicesSummaryCard({
 
       <div className="mt-5 space-y-3 text-xs font-semibold leading-5 text-slate-600">
         <div>Condição de Pagamento: fornecedores faturados via nota de débito Joy Eventos - 45 dias</div>
-        <div className="rounded-lg bg-amber-100 p-3 font-black uppercase text-slate-950">
+        <div className="rounded-lg bg-gray-200 p-3 font-black uppercase text-slate-950 border border-gray-300">
           EXCETO PARA CONTRATAÇÃO DE LOCAIS E ARTÍSTICO QUE DEVERÃO SER NEGOCIADOS VALORES DE ADIANTAMENTO PARA PRE
           BLOQUEIO
         </div>

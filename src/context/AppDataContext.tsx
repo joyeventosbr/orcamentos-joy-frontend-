@@ -5,27 +5,32 @@ import React, {
   useState,
   ReactNode,
 } from 'react';
-import { Project, Budget } from '../types';
-import { budgetService } from '@/src/services/budgetService';
+import { Client, Job, Budget } from '../types';
+import { budgetService, ApprovalResult } from '@/src/services/budgetService';
 import { useAuth } from './AuthContext';
 
 interface AppDataContextType {
-  projects: Project[];
+  clients: Client[];
+  jobs: Job[];
   budgets: Budget[];
   isLoading: boolean;
-  addProject: (name: string) => Promise<Project>;
-  deleteProject: (id: string) => Promise<void>;
-  addBudget: (input: { projectId: string; name: string }) => Promise<Budget>;
+  addClient: (name: string) => Promise<Client>;
+  deleteClient: (id: string) => Promise<void>;
+  addJob: (clientId: string, name: string) => Promise<Job>;
+  deleteJob: (id: string) => Promise<void>;
+  addBudget: (input: { jobId: string; name: string }) => Promise<Budget>;
   updateBudget: (id: string, budget: Budget) => Promise<Budget>;
   deleteBudget: (id: string) => Promise<void>;
   duplicateBudget: (id: string) => Promise<Budget | null>;
+  approveBudget: (id: string) => Promise<ApprovalResult>;
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +40,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     budgetService.getInitialData().then((data) => {
       if (!isMounted) return;
 
-      setProjects(data.projects);
+      setClients(data.clients);
+      setJobs(data.jobs);
       setBudgets(data.budgets);
       setIsLoading(false);
     });
@@ -45,23 +51,41 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const addProject = async (name: string) => {
-    const newProject = await budgetService.createProject(name);
-    setProjects((prev) => [...prev, newProject]);
+  // --- Client ---
 
-    return newProject;
+  const addClient = async (name: string) => {
+    const newClient = await budgetService.createClient(name);
+    setClients((prev) => [...prev, newClient]);
+    return newClient;
   };
 
-  const deleteProject = async (id: string) => {
-    await budgetService.deleteProject(id);
-    setProjects((prev) => prev.filter((project) => project.id !== id));
-    setBudgets((prev) => prev.filter((budget) => budget.projectId !== id));
+  const deleteClient = async (id: string) => {
+    await budgetService.deleteClient(id);
+    const jobIds = jobs.filter((j) => j.clientId === id).map((j) => j.id);
+    setClients((prev) => prev.filter((c) => c.id !== id));
+    setJobs((prev) => prev.filter((j) => j.clientId !== id));
+    setBudgets((prev) => prev.filter((b) => !jobIds.includes(b.jobId)));
   };
 
-  const addBudget = async (input: { projectId: string; name: string }) => {
+  // --- Job ---
+
+  const addJob = async (clientId: string, name: string) => {
+    const newJob = await budgetService.createJob(clientId, name);
+    setJobs((prev) => [...prev, newJob]);
+    return newJob;
+  };
+
+  const deleteJob = async (id: string) => {
+    await budgetService.deleteJob(id);
+    setJobs((prev) => prev.filter((j) => j.id !== id));
+    setBudgets((prev) => prev.filter((b) => b.jobId !== id));
+  };
+
+  // --- Budget ---
+
+  const addBudget = async (input: { jobId: string; name: string }) => {
     const newBudget = await budgetService.createBudget(input);
     setBudgets((prev) => [...prev, newBudget]);
-
     return newBudget;
   };
 
@@ -71,7 +95,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setBudgets((prev) =>
       prev.map((budget) => (budget.id === id ? savedBudget : budget)),
     );
-
     return savedBudget;
   };
 
@@ -82,25 +105,41 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const duplicateBudget = async (id: string) => {
     const duplicatedBudget = await budgetService.duplicateBudget(id);
-
     if (duplicatedBudget) {
       setBudgets((prev) => [...prev, duplicatedBudget]);
     }
-
     return duplicatedBudget;
+  };
+
+  // --- Approval Workflow ---
+
+  const approveBudget = async (id: string) => {
+    const result = await budgetService.approveBudget(id);
+    setBudgets((prev) => {
+      let updated = [...prev, result.approvedCopy];
+      if (result.productionCopy) {
+        updated = [...updated, result.productionCopy];
+      }
+      return updated;
+    });
+    return result;
   };
 
   return (
     <AppDataContext.Provider value={{
-      projects,
+      clients,
+      jobs,
       budgets,
       isLoading,
-      addProject,
-      deleteProject,
+      addClient,
+      deleteClient,
+      addJob,
+      deleteJob,
       addBudget,
       updateBudget,
       deleteBudget,
-      duplicateBudget
+      duplicateBudget,
+      approveBudget,
     }}>
       {children}
     </AppDataContext.Provider>

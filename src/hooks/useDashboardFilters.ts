@@ -1,39 +1,54 @@
-import { Budget, BudgetStatus, Project } from "@/src/types";
+import { Budget, BudgetFolder, Client, Job, getBudgetFolder } from "@/src/types";
 
 interface UseDashboardFiltersParams {
-  projects: Project[];
+  clients: Client[];
+  jobs: Job[];
   budgets: Budget[];
-  currentProjectId: string | null;
+  currentClientId: string | null;
+  currentJobId: string | null;
+  activeFolder: BudgetFolder;
   searchQuery: string;
-  statusFilter: BudgetStatus | "Todos";
 }
 
 export function useDashboardFilters({
-  projects,
+  clients,
+  jobs,
   budgets,
-  currentProjectId,
+  currentClientId,
+  currentJobId,
+  activeFolder,
   searchQuery,
-  statusFilter,
 }: UseDashboardFiltersParams) {
   const normalizedSearch = searchQuery.trim().toLowerCase();
-  const currentProject =
-    projects.find((project) => project.id === currentProjectId) ?? null;
 
-  const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(normalizedSearch),
+  const currentClient =
+    clients.find((c) => c.id === currentClientId) ?? null;
+
+  const currentJob =
+    jobs.find((j) => j.id === currentJobId) ?? null;
+
+  const filteredClients = clients.filter((client) =>
+    client.name.toLowerCase().includes(normalizedSearch),
   );
 
-  const filteredBudgets = budgets.filter((budget) => {
-    const matchesProject = budget.projectId === currentProjectId;
-    const matchesSearch = budget.name.toLowerCase().includes(normalizedSearch);
-    const matchesStatus = statusFilter === "Todos" || budget.status === statusFilter;
+  const filteredJobs = jobs.filter((job) => {
+    const matchesClient = job.clientId === currentClientId;
+    const matchesSearch = job.name.toLowerCase().includes(normalizedSearch);
+    return matchesClient && matchesSearch;
+  });
 
-    return matchesProject && matchesSearch && matchesStatus;
+  const filteredBudgets = budgets.filter((budget) => {
+    const matchesJob = budget.jobId === currentJobId;
+    const matchesFolder = getBudgetFolder(budget) === activeFolder;
+    const matchesSearch = budget.name.toLowerCase().includes(normalizedSearch);
+    return matchesJob && matchesFolder && matchesSearch;
   });
 
   return {
-    currentProject,
-    filteredProjects,
+    currentClient,
+    currentJob,
+    filteredClients,
+    filteredJobs,
     filteredBudgets,
   };
 }

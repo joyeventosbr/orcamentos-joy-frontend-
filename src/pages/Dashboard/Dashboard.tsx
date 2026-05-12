@@ -1,59 +1,100 @@
 import { CreateEntityModal } from "./components/CreateEntityModal";
 import { useAppData } from "../../context/AppDataContext";
 import { useDashboardFilters } from "@/src/hooks/useDashboardFilters";
-import { BudgetStatus } from "@/src/types";
+import { BudgetFolder } from "@/src/types";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardToolbar } from "./components/DashboardToolbar";
-import { ProjectsView } from "./components/ProjectsView";
+import { ClientsView } from "./components/ClientsView";
+import { JobsView } from "./components/JobsView";
 import { BudgetsView } from "./components/BudgetsView";
+
+type DashboardLevel = "clients" | "jobs" | "budgets";
 
 export function Dashboard() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<BudgetStatus | "Todos">("Todos");
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [activeFolder, setActiveFolder] = useState<BudgetFolder>("concorrencia");
+  const [currentClientId, setCurrentClientId] = useState<string | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
 
-  const { projects, budgets, isLoading, addProject, duplicateBudget, addBudget } = useAppData();
+  const { clients, jobs, budgets, isLoading, addClient, addJob, addBudget, duplicateBudget } = useAppData();
 
-  const { currentProject, filteredProjects, filteredBudgets } = useDashboardFilters({
-    projects,
+  const { currentClient, currentJob, filteredClients, filteredJobs, filteredBudgets } = useDashboardFilters({
+    clients,
+    jobs,
     budgets,
-    currentProjectId,
+    currentClientId,
+    currentJobId,
+    activeFolder,
     searchQuery,
-    statusFilter,
   });
 
-  const handleCreateProject = async () => {
-    const name = newItemName.trim();
-    if (!name) return;
-    await addProject(name);
-    setNewItemName("");
-    setIsProjectModalOpen(false);
+  const level: DashboardLevel = currentJobId ? "budgets" : currentClientId ? "jobs" : "clients";
+
+  const handleBack = () => {
+    setSearchQuery("");
+    if (currentJobId) {
+      setCurrentJobId(null);
+      setActiveFolder("concorrencia");
+    } else if (currentClientId) {
+      setCurrentClientId(null);
+    }
   };
 
-  const handleCreateBudget = async () => {
-    const name = newItemName.trim();
-    if (!name || !currentProjectId) return;
-    const budget = await addBudget({ projectId: currentProjectId, name });
-    setNewItemName("");
-    setIsBudgetModalOpen(false);
-    navigate(`/editor/${budget.id}`);
+  const handleSelectClient = (clientId: string) => {
+    setSearchQuery("");
+    setCurrentClientId(clientId);
+  };
+
+  const handleSelectJob = (jobId: string) => {
+    setSearchQuery("");
+    setCurrentJobId(jobId);
+    setActiveFolder("concorrencia");
   };
 
   const handleNew = () => {
     setNewItemName("");
-    if (currentProjectId) {
-      setIsBudgetModalOpen(true);
-    } else {
-      setIsProjectModalOpen(true);
+    setIsModalOpen(true);
+  };
+
+  const handleCreateEntity = async () => {
+    const name = newItemName.trim();
+    if (!name) return;
+
+    if (level === "clients") {
+      await addClient(name);
+    } else if (level === "jobs" && currentClientId) {
+      await addJob(currentClientId, name);
+    } else if (level === "budgets" && currentJobId) {
+      const budget = await addBudget({ jobId: currentJobId, name });
+      setIsModalOpen(false);
+      setNewItemName("");
+      navigate(`/editor/${budget.id}`);
+      return;
+    }
+
+    setNewItemName("");
+    setIsModalOpen(false);
+  };
+
+  const getModalConfig = () => {
+    switch (level) {
+      case "clients":
+        return { title: "Novo Cliente", placeholder: "Nome do cliente", submitLabel: "Criar Cliente" };
+      case "jobs":
+        return { title: "Novo Job", placeholder: "Nome do job / evento", submitLabel: "Criar Job" };
+      case "budgets":
+        return { title: "Novo Orçamento", placeholder: "Nome do orçamento", submitLabel: "Criar Orçamento" };
     }
   };
+
+  const showNewButton = level !== "budgets" || activeFolder === "concorrencia";
+  const newButtonLabel = level === "clients" ? "Novo Cliente" : level === "jobs" ? "Novo Job" : "Novo Orçamento";
 
   if (isLoading) {
     return (
@@ -68,64 +109,67 @@ export function Dashboard() {
     );
   }
 
+  const modalConfig = getModalConfig();
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50/50">
       <DashboardHeader
-        currentProject={currentProject}
-        onBack={() => setCurrentProjectId(null)}
+        currentClient={currentClient}
+        currentJob={currentJob}
+        onBack={handleBack}
         onNew={handleNew}
+        showNewButton={showNewButton}
+        newButtonLabel={newButtonLabel}
       />
 
       <DashboardToolbar
-        isProjectView={!currentProjectId}
+        level={level}
         searchQuery={searchQuery}
-        statusFilter={statusFilter}
+        activeFolder={activeFolder}
         viewMode={viewMode}
         onSearchChange={setSearchQuery}
-        onStatusFilterChange={setStatusFilter}
+        onFolderChange={setActiveFolder}
         onViewModeChange={setViewMode}
       />
 
       <div className="flex-1 overflow-auto px-8 pb-8">
-        {!currentProjectId ? (
-          <ProjectsView
-            projects={filteredProjects}
-            budgets={budgets}
+        {level === "clients" && (
+          <ClientsView
+            clients={filteredClients}
+            jobs={jobs}
             viewMode={viewMode}
-            onSelectProject={setCurrentProjectId}
+            onSelectClient={handleSelectClient}
             onClearSearch={() => setSearchQuery("")}
           />
-        ) : (
+        )}
+        {level === "jobs" && (
+          <JobsView
+            jobs={filteredJobs}
+            budgets={budgets}
+            viewMode={viewMode}
+            onSelectJob={handleSelectJob}
+            onClearSearch={() => setSearchQuery("")}
+          />
+        )}
+        {level === "budgets" && (
           <BudgetsView
             budgets={filteredBudgets}
             viewMode={viewMode}
             onDuplicate={duplicateBudget}
-            onClearFilters={() => { setSearchQuery(""); setStatusFilter("Todos"); }}
+            onClearFilters={() => setSearchQuery("")}
           />
         )}
       </div>
 
-      {isProjectModalOpen && (
+      {isModalOpen && (
         <CreateEntityModal
-          title="Novo Projeto"
-          placeholder="Nome do projeto"
+          title={modalConfig.title}
+          placeholder={modalConfig.placeholder}
           value={newItemName}
-          submitLabel="Criar Projeto"
+          submitLabel={modalConfig.submitLabel}
           onChange={setNewItemName}
-          onCancel={() => setIsProjectModalOpen(false)}
-          onSubmit={() => void handleCreateProject()}
-        />
-      )}
-
-      {isBudgetModalOpen && currentProjectId && (
-        <CreateEntityModal
-          title="Novo Orçamento"
-          placeholder="Nome do orçamento"
-          value={newItemName}
-          submitLabel="Criar Orçamento"
-          onChange={setNewItemName}
-          onCancel={() => setIsBudgetModalOpen(false)}
-          onSubmit={() => void handleCreateBudget()}
+          onCancel={() => setIsModalOpen(false)}
+          onSubmit={() => void handleCreateEntity()}
         />
       )}
     </div>

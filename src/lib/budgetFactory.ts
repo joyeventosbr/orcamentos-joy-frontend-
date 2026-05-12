@@ -1,11 +1,12 @@
-import { Budget, BUDGET_CATEGORIES, BudgetBillingType, BudgetItem, BudgetStatus } from "@/src/types";
+import { Budget, BUDGET_CATEGORIES, BudgetBillingType, BudgetItem, BudgetPhase, BudgetStatus } from "@/src/types";
 
 const createId = (prefix: string) => `${prefix}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 interface CreateBudgetParams {
-  projectId: string;
+  jobId: string;
   name: string;
   status?: BudgetStatus;
+  phase?: BudgetPhase;
 }
 
 const INTERNAL_SERVICE_BILLING_TYPE: BudgetBillingType = "VIA NF";
@@ -64,6 +65,11 @@ export function createBudgetItem(
     payment45d: 0,
     payment60d: 0,
     payment90d: 0,
+    payment120d: 0,
+    fornecedorName: "",
+    fornecedorValue: 0,
+    percentBV: 0,
+    percentNfOver: 0,
     ...overrides,
   };
 }
@@ -83,16 +89,52 @@ export function createDefaultBudgetItems(): BudgetItem[] {
   });
 }
 
-export function createBudget({ projectId, name, status = "Rascunho" }: CreateBudgetParams): Budget {
+export function createBudget({ jobId, name, status = "Concorrência", phase = "concorrencia" }: CreateBudgetParams): Budget {
   return {
     id: createId("b"),
-    projectId,
+    jobId,
     name,
     status,
+    phase,
+    isLocked: false,
     totalValue: 0,
     lastUpdated: new Date().toISOString(),
     honorariumPercentage: 10,
     items: createDefaultBudgetItems(),
+  };
+}
+
+export function createApprovedCopy(source: Budget): Budget {
+  const label = source.phase === "concorrencia" ? "Aprovado Concorrência" : "Aprovado Produção";
+  return {
+    ...source,
+    id: createId("b"),
+    name: `${source.name} - ${label}`,
+    status: "Aprovado",
+    isLocked: true,
+    sourceBudgetId: source.id,
+    lastUpdated: new Date().toISOString(),
+    items: source.items.map((item) => ({
+      ...item,
+      id: createId("i"),
+    })),
+  };
+}
+
+export function createProductionBudget(source: Budget): Budget {
+  return {
+    ...source,
+    id: createId("b"),
+    name: `${source.name} - Produção`,
+    phase: "producao",
+    status: "Produção",
+    isLocked: false,
+    sourceBudgetId: source.id,
+    lastUpdated: new Date().toISOString(),
+    items: source.items.map((item) => ({
+      ...item,
+      id: createId("i"),
+    })),
   };
 }
 
@@ -116,7 +158,7 @@ export function createDuplicatedBudget(budget: Budget, relatedBudgets: Budget[])
   }
 
   const sameBaseBudgets = relatedBudgets.filter(
-    (item) => item.projectId === budget.projectId && item.name.startsWith(baseName),
+    (item) => item.jobId === budget.jobId && item.name.startsWith(baseName),
   );
 
   const maxVersion = sameBaseBudgets.reduce((max, item) => {
@@ -131,6 +173,8 @@ export function createDuplicatedBudget(budget: Budget, relatedBudgets: Budget[])
     ...budget,
     id: createId("b"),
     name: `${baseName} v${maxVersion + 1}`,
+    status: "Concorrência",
+    isLocked: false,
     lastUpdated: new Date().toISOString(),
     items: budget.items.map((item) => ({
       ...item,

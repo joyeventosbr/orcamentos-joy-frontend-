@@ -1,4 +1,10 @@
-export type BudgetStatus = "Rascunho" | "Em andamento" | "Aprovado";
+export type BudgetStatus = "Concorrência" | "Aprovado" | "Produção";
+
+export type BudgetPhase = "concorrencia" | "producao";
+
+export const BUDGET_FOLDER_OPTIONS = ["concorrencia", "aprovados", "producao"] as const;
+
+export type BudgetFolder = (typeof BUDGET_FOLDER_OPTIONS)[number];
 
 export const BILLING_TYPE_OPTIONS = ["VIA CLIENTE", "ND OU REPASSE", "VIA NF", "OPCIONAL", "EXCLUÍDO"] as const;
 
@@ -8,8 +14,15 @@ export const HONORARIUM_PERCENTAGE_OPTIONS = [10, 15, 20] as const;
 
 export type HonorariumPercentage = (typeof HONORARIUM_PERCENTAGE_OPTIONS)[number];
 
-export interface Project {
+export interface Client {
   id: string;
+  name: string;
+  updatedAt: string;
+}
+
+export interface Job {
+  id: string;
+  clientId: string;
   name: string;
   updatedAt: string;
 }
@@ -56,6 +69,11 @@ export interface BudgetItem {
   payment45d: number;
   payment60d: number;
   payment90d: number;
+  payment120d: number;
+  fornecedorName: string;
+  fornecedorValue: number;
+  percentBV: number;
+  percentNfOver: number;
 }
 
 export interface BudgetEditor {
@@ -65,9 +83,12 @@ export interface BudgetEditor {
 
 export interface Budget {
   id: string;
-  projectId: string;
+  jobId: string;
   name: string;
   status: BudgetStatus;
+  phase: BudgetPhase;
+  isLocked: boolean;
+  sourceBudgetId?: string;
   totalValue: number;
   lastUpdated: string;
   lastEditedBy?: BudgetEditor;
@@ -79,4 +100,16 @@ export interface Budget {
   date?: string;
   participants?: string;
   honorariumPercentage?: HonorariumPercentage;
+}
+
+export function getBudgetFolder(budget: Budget): BudgetFolder {
+  if (budget.status === "Aprovado") return "aprovados";
+  return budget.phase === "producao" ? "producao" : "concorrencia";
+}
+
+export function getApprovalLabel(budget: Budget): string {
+  if (budget.status !== "Aprovado") return budget.status;
+  return budget.phase === "concorrencia"
+    ? "Aprovado Concorrência"
+    : "Aprovado Produção";
 }

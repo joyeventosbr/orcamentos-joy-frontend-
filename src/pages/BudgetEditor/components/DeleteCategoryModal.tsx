@@ -11,7 +11,7 @@ export function DeleteCategoryModal({ onConfirm, onCancel }: DeleteCategoryModal
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
         <h3 className="text-lg font-bold text-slate-800 mb-2">Excluir Categoria</h3>
         <p className="text-slate-600 mb-6 font-medium">
-          Remover esta categoria apagará <span className="font-bold text-red-500">TODOS</span> os seus itens. Deseja
+          Remover esta categoria apagará <span className="font-bold text-gray-900">TODOS</span> os seus itens. Deseja
           continuar?
         </p>
         <div className="flex justify-end gap-3">
