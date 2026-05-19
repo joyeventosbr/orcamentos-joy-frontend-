@@ -1,6 +1,6 @@
 import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
 import { BUDGET_CATEGORIES, Budget, BudgetItem } from "@/src/types";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { BudgetEditorHeader } from "./components/BudgetEditorHeader";
@@ -44,36 +44,40 @@ export function BudgetEditor() {
 
   // --- UI Handlers ---
 
-  const toggleCategory = (categoryId: string) => {
+  const toggleCategory = useCallback((categoryId: string) => {
     setExpandedCategories((prev) => ({ ...prev, [categoryId]: !prev[categoryId] }));
-  };
+  }, []);
 
-  const handleAddRow = (categoryId: string) => {
+  const handleAddRow = useCallback((categoryId: string) => {
     const newItem = editor.addRow(categoryId);
     if (newItem) {
       setExpandedCategories((prev) => ({ ...prev, [categoryId]: true }));
       setEditingCell({ id: newItem.id, field: "name" });
     }
-  };
+  }, [editor.addRow]);
 
-  const handleDeleteCategory = (categoryId: string) => {
+  const handleDeleteCategory = useCallback((categoryId: string) => {
     if (editor.isLocked) return;
     setCategoryToDelete(categoryId);
-  };
+  }, [editor.isLocked]);
 
-  const handleConfirmDeleteCategory = () => {
+  const handleConfirmDeleteCategory = useCallback(() => {
     if (categoryToDelete) {
       editor.deleteCategoryItems(categoryToDelete);
       setCategoryToDelete(null);
     }
-  };
+  }, [categoryToDelete, editor.deleteCategoryItems]);
 
-  const handleCellClick = (id: string, field: keyof BudgetItem) => {
+  const handleCellClick = useCallback((id: string, field: keyof BudgetItem) => {
     if (editor.isLocked) return;
     setEditingCell({ id, field });
-  };
+  }, [editor.isLocked]);
 
-  const handleBudgetChange = (updates: Partial<Budget>) => {
+  const handleCellBlur = useCallback(() => {
+    setEditingCell(null);
+  }, []);
+
+  const handleBudgetChange = useCallback((updates: Partial<Budget>) => {
     if (editor.isLocked) return;
 
     if (updates.status === "Aprovado") {
@@ -92,9 +96,9 @@ export function BudgetEditor() {
     }
 
     editor.updateBudgetFields(updates);
-  };
+  }, [editor.isLocked, editor.runValidation, editor.updateBudgetFields]);
 
-  const handleApproveConfirm = async () => {
+  const handleApproveConfirm = useCallback(async () => {
     try {
       await editor.handleApprove();
       setShowApprovalModal(false);
@@ -103,7 +107,7 @@ export function BudgetEditor() {
       const message = err instanceof Error ? err.message : "Erro ao aprovar orçamento.";
       setApprovalError(message);
     }
-  };
+  }, [editor.handleApprove]);
 
   if (editor.isLoading || !editor.budget) {
     return (
@@ -145,7 +149,7 @@ export function BudgetEditor() {
             onDeleteCategory={handleDeleteCategory}
             onDeleteRow={editor.deleteRow}
             onCellClick={handleCellClick}
-            onCellBlur={() => setEditingCell(null)}
+            onCellBlur={handleCellBlur}
             onUpdate={editor.updateItem}
           />
         </div>

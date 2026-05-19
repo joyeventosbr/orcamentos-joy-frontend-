@@ -3,7 +3,7 @@ import { calculatePaymentScheduleTotals, PAYMENT_SCHEDULE_COLUMNS } from "@/src/
 import { ProfitabilityCategory } from "@/src/hooks/useProfitabilitySummary";
 import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
-import React from "react";
+import React, { memo } from "react";
 import { BudgetTableCell } from "./BudgetTableCell";
 
 interface BudgetCategorySectionProps {
@@ -24,7 +24,7 @@ interface BudgetCategorySectionProps {
   onUpdate: TBudgetItemUpdater;
 }
 
-export function BudgetCategorySection({
+export const BudgetCategorySection = memo(function BudgetCategorySection({
   category,
   items,
   isExpanded,
@@ -240,4 +240,4 @@ export function BudgetCategorySection({
       </tr>
     </React.Fragment>
   );
-}
+});

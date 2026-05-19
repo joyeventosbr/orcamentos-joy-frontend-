@@ -6,7 +6,7 @@ import { useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from "@/src/lib/budgetFactory";
 import { IBudgetValidationResult, validateBudget } from "@/src/lib/budgetValidation";
 import { BUDGET_CATEGORIES, Budget, BudgetItem, HonorariumPercentage } from "@/src/types";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 export function useBudgetEditor(budgetId: string | undefined) {
@@ -26,7 +26,11 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
   const isLocked = budget?.isLocked ?? false;
   const budgetItems = budget?.items ?? [];
-  const primaryBudgetItems = budgetItems.filter((item) => !item.categoryId.startsWith("2."));
+
+  const primaryBudgetItems = useMemo(
+    () => budgetItems.filter((item) => !item.categoryId.startsWith("2.")),
+    [budgetItems],
+  );
 
   const groupedItems = useMemo(() => {
     const groups: Record<string, BudgetItem[]> = {};
@@ -37,12 +41,13 @@ export function useBudgetEditor(budgetId: string | undefined) {
     return groups;
   }, [budgetItems]);
 
-  const primaryBudgetCategories = BUDGET_CATEGORIES.filter((c) => !c.id.startsWith("2."));
+  const primaryBudgetCategories = useMemo(() => BUDGET_CATEGORIES.filter((c) => !c.id.startsWith("2.")), []);
 
-  const internalServiceCategories = BUDGET_CATEGORIES.filter((c) => c.id.startsWith("2."));
+  const internalServiceCategories = useMemo(() => BUDGET_CATEGORIES.filter((c) => c.id.startsWith("2.")), []);
 
-  const missingCategories = primaryBudgetCategories.filter(
-    (c) => !groupedItems[c.id] || groupedItems[c.id].length === 0,
+  const missingCategories = useMemo(
+    () => primaryBudgetCategories.filter((c) => !groupedItems[c.id] || groupedItems[c.id].length === 0),
+    [primaryBudgetCategories, groupedItems],
   );
 
   // --- Summaries ---
@@ -68,7 +73,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
   // --- Actions ---
 
-  const updateItem = (id: string, field: keyof BudgetItem, value: string | number) => {
+  const updateItem = useCallback((id: string, field: keyof BudgetItem, value: string | number) => {
     if (isLocked) return;
     setBudget((prev) => {
       if (!prev) return prev;
@@ -90,67 +95,67 @@ export function useBudgetEditor(budgetId: string | undefined) {
         totalValue: recalculateBudgetTotal(newItems),
       };
     });
-  };
+  }, [isLocked]);
 
-  const addRow = (categoryId: string): BudgetItem | null => {
-    if (!budget || isLocked) return null;
+  const addRow = useCallback((categoryId: string): BudgetItem | null => {
+    if (isLocked) return null;
 
-    const categoryItems = budget.items.filter((i) => i.categoryId === categoryId);
-    let nextNum = 1;
-    if (categoryItems.length > 0) {
-      const nums = categoryItems.map((i) => {
-        const parts = i.itemNumber.split(".");
-        return parseInt(parts[parts.length - 1], 10) || 0;
-      });
-      nextNum = Math.max(...nums) + 1;
-    }
-
-    const newItem = createBudgetItem(categoryId, `${categoryId}.${nextNum}`);
+    let newItem: BudgetItem | null = null;
 
     setBudget((prev) => {
       if (!prev) return prev;
+      const categoryItems = prev.items.filter((i) => i.categoryId === categoryId);
+      let nextNum = 1;
+      if (categoryItems.length > 0) {
+        const nums = categoryItems.map((i) => {
+          const parts = i.itemNumber.split(".");
+          return parseInt(parts[parts.length - 1], 10) || 0;
+        });
+        nextNum = Math.max(...nums) + 1;
+      }
+      newItem = createBudgetItem(categoryId, `${categoryId}.${nextNum}`);
       return { ...prev, items: [...prev.items, newItem] };
     });
 
     return newItem;
-  };
+  }, [isLocked]);
 
-  const deleteRow = (id: string) => {
+  const deleteRow = useCallback((id: string) => {
     if (isLocked) return;
     setBudget((prev) => {
       if (!prev) return prev;
       const newItems = prev.items.filter((item) => item.id !== id);
       return { ...prev, items: newItems, totalValue: recalculateBudgetTotal(newItems) };
     });
-  };
+  }, [isLocked]);
 
-  const deleteCategoryItems = (categoryId: string) => {
+  const deleteCategoryItems = useCallback((categoryId: string) => {
     setBudget((prev) => {
       if (!prev) return prev;
       const newItems = prev.items.filter((item) => item.categoryId !== categoryId);
       return { ...prev, items: newItems, totalValue: recalculateBudgetTotal(newItems) };
     });
-  };
+  }, []);
 
-  const updateBudgetFields = (updates: Partial<Budget>) => {
+  const updateBudgetFields = useCallback((updates: Partial<Budget>) => {
     if (isLocked) return;
     setBudget((prev) => (prev ? { ...prev, ...updates } : prev));
-  };
+  }, [isLocked]);
 
-  const updateHonorariumPercentageValue = (value: HonorariumPercentage) => {
+  const updateHonorariumPercentageValue = useCallback((value: HonorariumPercentage) => {
     if (isLocked) return;
     setBudget((prev) => {
       if (!prev) return prev;
       return { ...prev, honorariumPercentage: value };
     });
-  };
+  }, [isLocked]);
 
-  const runValidation = (): IBudgetValidationResult => {
+  const runValidation = useCallback((): IBudgetValidationResult => {
     if (!budget) return { missingFields: [], inconsistentItems: [] };
     return validateBudget(budget);
-  };
+  }, [budget]);
 
-  const saveBudget = async (): Promise<boolean> => {
+  const saveBudget = useCallback(async (): Promise<boolean> => {
     if (!budget || isLocked) return false;
 
     const { missingFields, inconsistentItems } = validateBudget(budget);
@@ -171,9 +176,9 @@ export function useBudgetEditor(budgetId: string | undefined) {
     });
     toast.success("Orçamento salvo com sucesso!");
     return true;
-  };
+  }, [budget, isLocked, budgetGrandTotal, updateBudget]);
 
-  const handleApprove = async (): Promise<void> => {
+  const handleApprove = useCallback(async (): Promise<void> => {
     if (!budget) return;
 
     const saved = await saveBudget();
@@ -186,7 +191,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
     } else {
       toast.success("Cópia aprovada de produção criada!");
     }
-  };
+  }, [budget, saveBudget, approveBudget]);
 
   return {
     budget,

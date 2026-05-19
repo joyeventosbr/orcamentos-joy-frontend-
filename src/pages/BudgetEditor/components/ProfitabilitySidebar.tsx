@@ -9,7 +9,6 @@ interface ProfitabilitySidebarProps {
   onUpdateItem: TBudgetItemUpdater;
 }
 
-
 function MetricLine({
   label,
   value,
@@ -51,20 +50,12 @@ function PercentLine({ label, value }: { label: string; value: number }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-6 py-2.5">
       <div className="text-sm font-semibold leading-snug text-gray-700">{label}</div>
-      <div className="shrink-0 text-right text-sm font-bold tabular-nums text-gray-900">
-        {value.toFixed(2)}%
-      </div>
+      <div className="shrink-0 text-right text-sm font-bold tabular-nums text-gray-900">{value.toFixed(2)}%</div>
     </div>
   );
 }
 
-function RentabilidadeBadge({
-  label,
-  isRentavel,
-}: {
-  label: string;
-  isRentavel: boolean;
-}) {
+function RentabilidadeBadge({ label, isRentavel }: { label: React.ReactNode; isRentavel: boolean }) {
   return (
     <div
       className={`rounded-lg px-4 py-3 text-center ${
@@ -89,8 +80,17 @@ export function ProfitabilitySidebar({ isOpen, summary }: ProfitabilitySidebarPr
       <div className="w-[440px] h-full min-h-0 flex flex-col overflow-y-auto">
         <div className="border-b px-7 py-6 bg-gray-50">
           <div className="grid grid-cols-2 gap-3">
-            <RentabilidadeBadge label="Pré Evento - Concorrência" isRentavel={summary.isRentavelPre} />
-            <RentabilidadeBadge label="Pós Concorrência" isRentavel={summary.isRentavelProd} />
+            <RentabilidadeBadge label="Pré Evento Concorrência" isRentavel={summary.isRentavelPre} />
+            <RentabilidadeBadge
+              label={
+                <>
+                  Pós
+                  <br />
+                  Concorrência
+                </>
+              }
+              isRentavel={summary.isRentavelProd}
+            />
           </div>
         </div>
 

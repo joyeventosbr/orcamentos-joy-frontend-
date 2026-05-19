@@ -1,7 +1,10 @@
 import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
 import { ProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { ChevronDown } from "lucide-react";
+import React, { useMemo } from "react";
 import { BudgetCategorySection } from "./BudgetCategorySection";
+
+const noop = () => {};
 
 interface BudgetSpreadsheetProps {
   primaryCategories: BudgetCategory[];
@@ -21,7 +24,7 @@ interface BudgetSpreadsheetProps {
   onUpdate: TBudgetItemUpdater;
 }
 
-export function BudgetSpreadsheet({
+export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
   primaryCategories,
   internalServiceCategories,
   groupedItems,
@@ -38,17 +41,22 @@ export function BudgetSpreadsheet({
   onCellBlur,
   onUpdate,
 }: BudgetSpreadsheetProps) {
-  const sectionProps = {
+  const sectionProps = useMemo(() => ({
     editingCell: isLocked ? null : editingCell,
     isLocked,
     onToggle: onToggleCategory,
-    onAddRow: isLocked ? () => {} : onAddRow,
-    onDeleteCategory: isLocked ? () => {} : onDeleteCategory,
-    onDeleteRow: isLocked ? () => {} : onDeleteRow,
-    onCellClick: isLocked ? () => {} : onCellClick,
+    onAddRow: isLocked ? noop : onAddRow,
+    onDeleteCategory: isLocked ? noop : onDeleteCategory,
+    onDeleteRow: isLocked ? noop : onDeleteRow,
+    onCellClick: isLocked ? noop : onCellClick,
     onCellBlur,
-    onUpdate: isLocked ? () => {} : onUpdate,
-  };
+    onUpdate: isLocked ? noop : onUpdate,
+  }), [isLocked, editingCell, onToggleCategory, onAddRow, onDeleteCategory, onDeleteRow, onCellClick, onCellBlur, onUpdate]);
+
+  const primaryCategoryProfMap = useMemo(() => {
+    const map = new Map(profitabilitySummary?.categories.map((c) => [c.categoryId, c]));
+    return map;
+  }, [profitabilitySummary?.categories]);
 
   return (
     <div className="flex-1 min-h-0 p-6 overflow-y-auto">
@@ -112,7 +120,6 @@ export function BudgetSpreadsheet({
             {primaryCategories.map((category) => {
               const items = groupedItems[category.id] || [];
               if (items.length === 0) return null;
-              const catProfitability = profitabilitySummary?.categories.find(c => c.categoryId === category.id);
               return (
                 <BudgetCategorySection
                   key={category.id}
@@ -120,7 +127,7 @@ export function BudgetSpreadsheet({
                   items={items}
                   isExpanded={expandedCategories[category.id] ?? true}
                   allowInternalStyle
-                  categoryProfitability={catProfitability}
+                  categoryProfitability={primaryCategoryProfMap.get(category.id)}
                   {...sectionProps}
                 />
               );
@@ -189,7 +196,6 @@ export function BudgetSpreadsheet({
             {internalServiceCategories.map((category) => {
               const items = groupedItems[category.id] || [];
               if (items.length === 0) return null;
-              const catProfitability = profitabilitySummary?.categories.find(c => c.categoryId === category.id);
               return (
                 <BudgetCategorySection
                   key={category.id}
@@ -197,7 +203,7 @@ export function BudgetSpreadsheet({
                   items={items}
                   isExpanded={expandedCategories[category.id] ?? true}
                   allowInternalStyle={false}
-                  categoryProfitability={catProfitability}
+                  categoryProfitability={primaryCategoryProfMap.get(category.id)}
                   {...sectionProps}
                 />
               );
@@ -238,4 +244,4 @@ export function BudgetSpreadsheet({
       )}
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
 import { BILLING_TYPE_OPTIONS, BudgetItem, TBudgetItemUpdater } from "@/src/types";
-import React from "react";
+import React, { memo } from "react";
 
 interface BudgetTableCellProps {
   item: BudgetItem;
@@ -13,10 +13,19 @@ interface BudgetTableCellProps {
   onUpdate: TBudgetItemUpdater;
 }
 
-const CURRENCY_FIELDS = ["unitPrice", "total", "paymentAdvance", "payment30d", "payment45d", "payment60d", "payment90d", "fornecedorValue"];
+const CURRENCY_FIELDS = [
+  "unitPrice",
+  "total",
+  "paymentAdvance",
+  "payment30d",
+  "payment45d",
+  "payment60d",
+  "payment90d",
+  "fornecedorValue",
+];
 const PERCENT_FIELDS = ["percentBV", "percentNfOver"];
 
-export function BudgetTableCell({
+export const BudgetTableCell = memo(function BudgetTableCell({
   item,
   field,
   type = "text",
@@ -34,12 +43,14 @@ export function BudgetTableCell({
         <select
           className={`h-8 w-full rounded border px-2 py-1 text-sm font-medium outline-none transition-all focus:bg-white ${
             hasMissingBillingType
-              ? "border-amber-300 bg-amber-50 text-amber-900 focus:border-amber-400"
+              ? "border-red-300 bg-amber-50 text-red-900 focus:border-red-400"
               : "border-transparent bg-transparent text-slate-700 hover:bg-gray-100 focus:border-gray-300"
           }`}
           value={item.billingType}
           onChange={(e) => onUpdate(item.id, "billingType", e.target.value)}
-          title={hasMissingBillingType ? "Selecione o Tipo Faturamento — valor unitário preenchido sem tipo." : undefined}
+          title={
+            hasMissingBillingType ? "Selecione o Tipo Faturamento — valor unitário preenchido sem tipo." : undefined
+          }
         >
           <option value="">{hasMissingBillingType ? "⚠ Pendente" : "Selecionar"}</option>
           {BILLING_TYPE_OPTIONS.map((option) => (
@@ -49,7 +60,9 @@ export function BudgetTableCell({
           ))}
         </select>
         {hasMissingBillingType && (
-          <div className="px-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-amber-600">Obrigatório</div>
+          <div className="px-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-red-600 text-center">
+            Obrigatório
+          </div>
         )}
       </div>
     );
@@ -117,4 +130,4 @@ export function BudgetTableCell({
       </span>
     </div>
   );
-}
+});
