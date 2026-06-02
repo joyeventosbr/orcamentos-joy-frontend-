@@ -14,19 +14,6 @@ export const HONORARIUM_PERCENTAGE_OPTIONS = [10, 15, 20] as const;
 
 export type HonorariumPercentage = (typeof HONORARIUM_PERCENTAGE_OPTIONS)[number];
 
-export interface Client {
-  id: string;
-  name: string;
-  updatedAt: string;
-}
-
-export interface Job {
-  id: string;
-  clientId: string;
-  name: string;
-  updatedAt: string;
-}
-
 export interface BudgetCategory {
   id: string;
   name: string;

@@ -3,7 +3,7 @@ import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/Card/Card";
 import { UserRole } from "@/src/types/auth.types";
-import { Loader2, Mail, Plus, RefreshCw, Shield, User } from "lucide-react";
+import { Loader2, Mail, Plus, Shield, User } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { CreateUserModal } from "./CreateUserModal";
@@ -49,9 +49,6 @@ export function UsersPage() {
           <p className="text-sm text-gray-500 mt-0.5">Gerencie os acessos ao sistema</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isLoading}>
-            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
-          </Button>
           <Button size="sm" className="gap-2" onClick={() => setIsModalOpen(true)}>
             <Plus size={15} />
             Novo usuário
@@ -83,17 +80,23 @@ export function UsersPage() {
                 </Button>
               </div>
             ) : users.length === 0 ? (
-              <p className="px-6 py-8 text-sm text-gray-400 text-center">
-                Nenhum usuário encontrado.
-              </p>
+              <p className="px-6 py-8 text-sm text-gray-400 text-center">Nenhum usuário encontrado.</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Usuário</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">E-mail</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Perfil</th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Função</th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      E-mail
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Perfil
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Função
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -102,9 +105,11 @@ export function UsersPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-brand-primary/10 flex items-center justify-center shrink-0">
-                            {user.role === UserRole.ADMIN
-                              ? <Shield size={14} className="text-brand-primary" />
-                              : <User size={14} className="text-brand-primary" />}
+                            {user.role === UserRole.ADMIN ? (
+                              <Shield size={14} className="text-brand-primary" />
+                            ) : (
+                              <User size={14} className="text-brand-primary" />
+                            )}
                           </div>
                           <span className="font-medium text-gray-900">{user.name}</span>
                         </div>
@@ -133,11 +138,7 @@ export function UsersPage() {
       </div>
 
       {isModalOpen && (
-        <CreateUserModal
-          onCancel={() => setIsModalOpen(false)}
-          onSubmit={handleCreateUser}
-          isSubmitting={isPending}
-        />
+        <CreateUserModal onCancel={() => setIsModalOpen(false)} onSubmit={handleCreateUser} isSubmitting={isPending} />
       )}
     </div>
   );

@@ -64,6 +64,7 @@ export function BudgetEditorHeader({
                 </Badge>
               ) : (
                 <BudgetStatusSelect
+                  phase={budget.phase}
                   value={budget.status}
                   onChange={(status) => onBudgetChange({ status })}
                 />
@@ -123,7 +124,9 @@ export function BudgetEditorHeader({
       {/* Budget Details Row */}
       <div className="px-6 pb-4 pt-1 flex items-center gap-6 overflow-x-auto scrollbar-none border-t border-slate-100/50">
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold whitespace-nowrap transition-colors ${isClientEmpty ? "text-red-500" : "text-slate-800"}`}>
+          <span
+            className={`text-sm font-semibold whitespace-nowrap transition-colors ${isClientEmpty ? "text-red-500" : "text-slate-800"}`}
+          >
             Cliente:{!isLocked && <span className="text-red-400 ml-0.5 text-xs">*</span>}
           </span>
           <input
@@ -144,7 +147,9 @@ export function BudgetEditorHeader({
         </div>
         <div className="w-px h-4 bg-slate-200"></div>
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold whitespace-nowrap transition-colors ${isJobEmpty ? "text-red-500" : "text-slate-800"}`}>
+          <span
+            className={`text-sm font-semibold whitespace-nowrap transition-colors ${isJobEmpty ? "text-red-500" : "text-slate-800"}`}
+          >
             Job:{!isLocked && <span className="text-red-400 ml-0.5 text-xs">*</span>}
           </span>
           <input
@@ -165,7 +170,9 @@ export function BudgetEditorHeader({
         </div>
         <div className="w-px h-4 bg-slate-200"></div>
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold whitespace-nowrap transition-colors ${isDeadlineEmpty ? "text-red-500" : "text-slate-800"}`}>
+          <span
+            className={`text-sm font-semibold whitespace-nowrap transition-colors ${isDeadlineEmpty ? "text-red-500" : "text-slate-800"}`}
+          >
             Prazo:{!isLocked && <span className="text-red-400 ml-0.5 text-xs">*</span>}
           </span>
           <select

@@ -7,7 +7,6 @@ const percentage = z
 
 export const taxConfigSchema = z.object({
   nfTaxPercentage: percentage,
-  issPercentage: percentage,
 });
 
 export type TaxConfigFormValues = z.infer<typeof taxConfigSchema>;

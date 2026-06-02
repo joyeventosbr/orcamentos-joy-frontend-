@@ -14,7 +14,7 @@ export const createUserSchema = z
     path: ['confirmPassword'],
   })
   .refine((data) => data.role !== 'customer' || (data.cdCliente && data.cdCliente.trim().length > 0), {
-    message: 'Código do cliente é obrigatório para perfil Cliente',
+    message: 'Função é obrigatória para perfil Cliente',
     path: ['cdCliente'],
   });
 

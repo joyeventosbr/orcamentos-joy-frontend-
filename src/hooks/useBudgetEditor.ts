@@ -1,63 +1,94 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { budgetsReq } from '@/src/api/budgets/budgets.req';
-import { budgetsKeys } from '@/src/api/budgets/budgets.keys';
-import { categoriesReq } from '@/src/api/categories/categories.req';
-import { categoriesKeys } from '@/src/api/categories/categories.keys';
-import { budgetLinesReq } from '@/src/api/budget-lines/budget-lines.req';
+import { budgetLinesReq } from "@/src/api/budget-lines/budget-lines.req";
+import { budgetsKeys } from "@/src/api/budgets/budgets.keys";
+import { budgetsReq } from "@/src/api/budgets/budgets.req";
+import { categoriesKeys } from "@/src/api/categories/categories.keys";
+import { categoriesReq } from "@/src/api/categories/categories.req";
+import { useBudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
+import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
+import { usePaymentScheduleSummary } from "@/src/hooks/usePaymentScheduleSummary";
+import { useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
+import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from "@/src/lib/budgetFactory";
+import { IBudgetValidationResult, validateBudget } from "@/src/lib/budgetValidation";
+import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage } from "@/src/types";
 import {
+  ApiBudget,
   BillingType,
   BudgetDetail,
+  BudgetEditorInfo,
   BudgetLine,
   BulkUpdateBudgetLinesRequest,
   CreateBudgetLineRequest,
   PaymentTerm,
   UpdateBudgetLineRequest,
   UpdateBudgetRequest,
-} from '@/src/types/api.types';
-import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage } from '@/src/types';
-import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from '@/src/lib/budgetFactory';
-import { IBudgetValidationResult, validateBudget } from '@/src/lib/budgetValidation';
-import { useBudgetBillingSummary } from '@/src/hooks/useBudgetBillingSummary';
-import { useInternalServicesSummary } from '@/src/hooks/useInternalServicesSummary';
-import { usePaymentScheduleSummary } from '@/src/hooks/usePaymentScheduleSummary';
-import { useProfitabilitySummary } from '@/src/hooks/useProfitabilitySummary';
+} from "@/src/types/api.types";
+import { useAuthStore } from "@/src/store/auth.store";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 // --- Mappers ---
 
 const PAYMENT_TERM_TO_DEADLINE: Record<PaymentTerm, string> = {
-  [PaymentTerm.THIRTY_DAYS]: '30',
-  [PaymentTerm.FORTY_FIVE_DAYS]: '45',
-  [PaymentTerm.SIXTY_DAYS]: '60',
-  [PaymentTerm.NINETY_DAYS]: '90',
-  [PaymentTerm.ONE_HUNDRED_TWENTY_DAYS]: '120',
+  [PaymentTerm.THIRTY_DAYS]: "30",
+  [PaymentTerm.FORTY_FIVE_DAYS]: "45",
+  [PaymentTerm.SIXTY_DAYS]: "60",
+  [PaymentTerm.NINETY_DAYS]: "90",
+  [PaymentTerm.ONE_HUNDRED_TWENTY_DAYS]: "120",
 };
 
 const DEADLINE_TO_PAYMENT_TERM: Record<string, PaymentTerm> = {
-  '30': PaymentTerm.THIRTY_DAYS,
-  '45': PaymentTerm.FORTY_FIVE_DAYS,
-  '60': PaymentTerm.SIXTY_DAYS,
-  '90': PaymentTerm.NINETY_DAYS,
-  '120': PaymentTerm.ONE_HUNDRED_TWENTY_DAYS,
+  "30": PaymentTerm.THIRTY_DAYS,
+  "45": PaymentTerm.FORTY_FIVE_DAYS,
+  "60": PaymentTerm.SIXTY_DAYS,
+  "90": PaymentTerm.NINETY_DAYS,
+  "120": PaymentTerm.ONE_HUNDRED_TWENTY_DAYS,
 };
+
+function emptyToUndefined(value?: string): string | undefined {
+  if (value == null) return undefined;
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+function getCurrentEditorInfo(): BudgetEditorInfo | undefined {
+  const user = useAuthStore.getState().currentUser;
+  if (!user) return undefined;
+  return { name: user.name, email: user.email };
+}
+
+function patchBudgetListEditMetadata(
+  queryClient: ReturnType<typeof useQueryClient>,
+  budgetId: string,
+  updatedAt: string,
+  lastEditedBy?: BudgetEditorInfo,
+) {
+  queryClient.setQueryData<ApiBudget[]>(budgetsKeys.queries.list, (current) => {
+    if (!current) return current;
+    return current.map((item) =>
+      item.id === budgetId ? { ...item, updatedAt, ...(lastEditedBy ? { lastEditedBy } : {}) } : item,
+    );
+  });
+}
 
 function mapDetailToBudget(detail: BudgetDetail): Budget {
   return {
     id: detail.id,
     jobId: detail.folderId,
     name: detail.name,
-    status: 'Concorrência',
-    phase: 'concorrencia',
+    status: "Concorrência",
+    phase: "concorrencia",
     isLocked: false,
     totalValue: 0,
     lastUpdated: detail.updatedAt ?? detail.createdAt,
+    lastEditedBy: detail.lastEditedBy,
     items: [],
     client: detail.customerName,
-    job: detail.jobDescription ?? '',
-    deadline: detail.paymentTerm ? PAYMENT_TERM_TO_DEADLINE[detail.paymentTerm] : '',
-    location: detail.location ?? '',
-    date: detail.eventDate ?? '',
+    job: detail.jobDescription ?? "",
+    deadline: detail.paymentTerm ? PAYMENT_TERM_TO_DEADLINE[detail.paymentTerm] : "",
+    location: detail.location ?? "",
+    date: detail.eventDate ?? "",
+    participants: detail.participants ?? "",
   };
 }
 
@@ -68,7 +99,7 @@ function mapLineToItem(line: BudgetLine): BudgetItem {
     itemNumber: `${line.categoryCode}.${line.order}`,
     name: line.name,
     description: line.description,
-    billingType: '',
+    billingType: line.billingType as BudgetItem["billingType"],
     quantity: line.quantity,
     days: line.dailyRates,
     unitPrice: line.unitValue,
@@ -79,21 +110,20 @@ function mapLineToItem(line: BudgetLine): BudgetItem {
     payment60d: line.installment60Days,
     payment90d: line.installment90Days,
     payment120d: line.installment120Days,
-    fornecedorName: '',
+    fornecedorName: "",
     fornecedorValue: 0,
     percentBV: 0,
     percentNfOver: 0,
   };
 }
 
-function deriveBillingType(item: BudgetItem): BillingType {
-  if (item.days > 0) return BillingType.DAILY;
-  if (item.quantity > 0) return BillingType.UNIT;
-  return BillingType.FIXED;
+function toApiBillingType(billingType: BudgetItem["billingType"]): BillingType | undefined {
+  if (!billingType) return undefined;
+  return billingType as BillingType;
 }
 
 function extractOrder(itemNumber: string): number {
-  const parts = itemNumber.split('.');
+  const parts = itemNumber.split(".");
   const last = parts[parts.length - 1];
   return parseInt(last, 10) || 0;
 }
@@ -105,7 +135,7 @@ function mapItemToCreateRequest(item: BudgetItem, budgetId: string): CreateBudge
     order: extractOrder(item.itemNumber),
     name: item.name,
     description: item.description,
-    billingType: deriveBillingType(item),
+    billingType: toApiBillingType(item.billingType),
     quantity: item.quantity,
     dailyRates: item.days,
     unitValue: item.unitPrice,
@@ -126,7 +156,7 @@ function mapItemToUpdateRequest(item: BudgetItem): UpdateBudgetLineRequest & { i
     order: extractOrder(item.itemNumber),
     name: item.name,
     description: item.description,
-    billingType: deriveBillingType(item),
+    billingType: toApiBillingType(item.billingType),
     quantity: item.quantity,
     dailyRates: item.days,
     unitValue: item.unitPrice,
@@ -144,8 +174,9 @@ function mapBudgetToUpdateRequest(budget: Budget): UpdateBudgetRequest {
   return {
     name: budget.name,
     jobDescription: budget.job,
-    location: budget.location,
-    eventDate: budget.date,
+    location: emptyToUndefined(budget.location),
+    eventDate: emptyToUndefined(budget.date),
+    participants: emptyToUndefined(budget.participants),
     paymentTerm: budget.deadline ? DEADLINE_TO_PAYMENT_TERM[budget.deadline] : undefined,
   };
 }
@@ -157,13 +188,9 @@ function buildBulkRequest(
 ): BulkUpdateBudgetLinesRequest {
   const currentIds = new Set(currentItems.map((i) => i.id));
 
-  const toCreate = currentItems
-    .filter((i) => !originalIds.has(i.id))
-    .map((i) => mapItemToCreateRequest(i, budgetId));
+  const toCreate = currentItems.filter((i) => !originalIds.has(i.id)).map((i) => mapItemToCreateRequest(i, budgetId));
 
-  const toUpdate = currentItems
-    .filter((i) => originalIds.has(i.id))
-    .map((i) => mapItemToUpdateRequest(i));
+  const toUpdate = currentItems.filter((i) => originalIds.has(i.id)).map((i) => mapItemToUpdateRequest(i));
 
   const toDelete = [...originalIds].filter((id) => !currentIds.has(id));
 
@@ -180,7 +207,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const queryClient = useQueryClient();
 
   const { data: budgetDetail, isLoading: budgetLoading } = useQuery({
-    queryKey: ['budgets', 'detail', budgetId],
+    queryKey: ["budgets", "detail", budgetId],
     queryFn: () => budgetsReq.details(budgetId!),
     enabled: !!budgetId,
   });
@@ -215,16 +242,14 @@ export function useBudgetEditor(budgetId: string | undefined) {
     return apiCategories.map((c) => ({
       id: c.code,
       name: `${c.code} - ${c.name}`,
-      sectionTitle: c.code.startsWith('2.')
-        ? 'Itens faturados via nota fiscal Joy Eventos'
-        : undefined,
+      sectionTitle: c.code.startsWith("2.") ? "Itens faturados via nota fiscal Joy Eventos" : undefined,
     }));
   }, [apiCategories]);
 
   const budgetItems = budget?.items ?? [];
 
   const primaryBudgetItems = useMemo(
-    () => budgetItems.filter((item) => !item.categoryId.startsWith('2.')),
+    () => budgetItems.filter((item) => !item.categoryId.startsWith("2.")),
     [budgetItems],
   );
 
@@ -237,21 +262,12 @@ export function useBudgetEditor(budgetId: string | undefined) {
     return groups;
   }, [budgetItems]);
 
-  const primaryBudgetCategories = useMemo(
-    () => categories.filter((c) => !c.id.startsWith('2.')),
-    [categories],
-  );
+  const primaryBudgetCategories = useMemo(() => categories.filter((c) => !c.id.startsWith("2.")), [categories]);
 
-  const internalServiceCategories = useMemo(
-    () => categories.filter((c) => c.id.startsWith('2.')),
-    [categories],
-  );
+  const internalServiceCategories = useMemo(() => categories.filter((c) => c.id.startsWith("2.")), [categories]);
 
   const missingCategories = useMemo(
-    () =>
-      primaryBudgetCategories.filter(
-        (c) => !groupedItems[c.id] || groupedItems[c.id].length === 0,
-      ),
+    () => primaryBudgetCategories.filter((c) => !groupedItems[c.id] || groupedItems[c.id].length === 0),
     [primaryBudgetCategories, groupedItems],
   );
 
@@ -268,14 +284,10 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const profitabilitySummary = useProfitabilitySummary(
     primaryBudgetItems,
     internalServicesSummary.subtotal,
-    internalServicesSummary.subtotal +
-      internalServicesSummary.serviceTax +
-      billingSummary.totalSuppliers,
+    internalServicesSummary.subtotal + internalServicesSummary.serviceTax + billingSummary.totalSuppliers,
   );
   const budgetGrandTotal =
-    internalServicesSummary.subtotal +
-    internalServicesSummary.serviceTax +
-    billingSummary.totalSuppliers;
+    internalServicesSummary.subtotal + internalServicesSummary.serviceTax + billingSummary.totalSuppliers;
 
   // --- Item actions ---
 
@@ -287,7 +299,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
         const newItems = prev.items.map((item) => {
           if (item.id !== id) return item;
           const updated = { ...item, [field]: value };
-          if (field === 'quantity' || field === 'days' || field === 'unitPrice') {
+          if (field === "quantity" || field === "days" || field === "unitPrice") {
             return recalculateBudgetItemTotal(updated);
           }
           return updated;
@@ -309,7 +321,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
           categoryItems.length > 0
             ? Math.max(
                 ...categoryItems.map((i) => {
-                  const parts = i.itemNumber.split('.');
+                  const parts = i.itemNumber.split(".");
                   return parseInt(parts[parts.length - 1], 10) || 0;
                 }),
               ) + 1
@@ -366,11 +378,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
   // --- Save ---
 
   const updateBudgetMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateBudgetRequest }) =>
-      budgetsReq.update(id, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.list });
-    },
+    mutationFn: ({ id, body }: { id: string; body: UpdateBudgetRequest }) => budgetsReq.update(id, body),
   });
 
   const bulkUpdateMutation = useMutation({
@@ -382,7 +390,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
     const { missingFields, inconsistentItems } = validateBudget(budget);
     if (missingFields.length > 0) {
-      toast.error(`Preencha os campos obrigatórios: ${missingFields.join(', ')}`);
+      toast.error(`Preencha os campos obrigatórios: ${missingFields.join(", ")}`);
       return false;
     }
     if (inconsistentItems.length > 0) {
@@ -390,7 +398,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
       return false;
     }
 
-    await updateBudgetMutation.mutateAsync({
+    const updatedBudget = await updateBudgetMutation.mutateAsync({
       id: budgetId,
       body: mapBudgetToUpdateRequest(budget),
     });
@@ -400,22 +408,28 @@ export function useBudgetEditor(budgetId: string | undefined) {
       const savedLines = await bulkUpdateMutation.mutateAsync(bulk);
       // Atualiza os IDs originais após o save para o próximo diff ser correto
       const newlyCreatedIds = savedLines.map((l) => l.id);
-      const survivingOriginalIds = [...originalLineIdsRef.current].filter(
-        (id) => !bulk.delete?.includes(id),
-      );
+      const survivingOriginalIds = [...originalLineIdsRef.current].filter((id) => !bulk.delete?.includes(id));
       originalLineIdsRef.current = new Set([...survivingOriginalIds, ...newlyCreatedIds]);
     }
 
-    queryClient.invalidateQueries({ queryKey: ['budgets', 'detail', budgetId] });
-    toast.success('Orçamento salvo com sucesso!');
+    const lastEditedBy = updatedBudget.lastEditedBy ?? getCurrentEditorInfo();
+    const lastUpdated = updatedBudget.updatedAt ?? new Date().toISOString();
+
+    setBudget((prev) =>
+      prev ? { ...prev, lastUpdated, ...(lastEditedBy ? { lastEditedBy } : {}) } : prev,
+    );
+    patchBudgetListEditMetadata(queryClient, budgetId, lastUpdated, lastEditedBy);
+
+    queryClient.invalidateQueries({ queryKey: ["budgets", "detail", budgetId] });
+    toast.success("Orçamento salvo com sucesso!");
     return true;
   }, [budget, budgetId, updateBudgetMutation, bulkUpdateMutation, queryClient]);
 
   const handleApprove = useCallback(async (): Promise<void> => {
     if (!budget) return;
     const saved = await saveBudget();
-    if (!saved) throw new Error('Falha ao salvar antes de aprovar.');
-    toast.success('Aprovação será integrada na próxima fase.');
+    if (!saved) throw new Error("Falha ao salvar antes de aprovar.");
+    toast.success("Aprovação será integrada na próxima fase.");
   }, [budget, saveBudget]);
 
   return {

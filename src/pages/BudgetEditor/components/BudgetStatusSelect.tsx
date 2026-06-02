@@ -1,27 +1,30 @@
 import { cn } from "@/src/lib/utils";
-import { BudgetStatus } from "@/src/types";
+import { BudgetPhase, BudgetStatus } from "@/src/types";
 import { ChevronDown } from "lucide-react";
 
+const STATUS_OPTIONS_BY_PHASE: Record<BudgetPhase, BudgetStatus[]> = {
+  concorrencia: ["Concorrência", "Aprovado"],
+  producao: ["Produção", "Aprovado"],
+};
+
 const STATUS_STYLES: Record<BudgetStatus, string> = {
-  Concorrência:
-    "bg-gray-50 text-gray-800 border-gray-300 hover:border-gray-400 hover:bg-gray-100",
-  Aprovado:
-    "bg-green-50 text-green-800 border-green-300 hover:border-green-400 hover:bg-green-100",
-  Produção:
-    "bg-amber-50 text-amber-800 border-amber-300 hover:border-amber-400 hover:bg-amber-100",
+  Concorrência: "bg-gray-50 text-gray-800 border-gray-300 hover:border-gray-400 hover:bg-gray-100",
+  Aprovado: "bg-green-50 text-green-800 border-green-300 hover:border-green-400 hover:bg-green-100",
+  Produção: "bg-amber-50 text-amber-800 border-amber-300 hover:border-amber-400 hover:bg-amber-100",
 };
 
 interface BudgetStatusSelectProps {
+  phase: BudgetPhase;
   value: BudgetStatus;
   onChange: (status: BudgetStatus) => void;
 }
 
-export function BudgetStatusSelect({ value, onChange }: BudgetStatusSelectProps) {
+export function BudgetStatusSelect({ phase, value, onChange }: BudgetStatusSelectProps) {
+  const options = STATUS_OPTIONS_BY_PHASE[phase];
+
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
-        Status
-      </span>
+      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Status</span>
       <div className="relative">
         <select
           value={value}
@@ -35,9 +38,11 @@ export function BudgetStatusSelect({ value, onChange }: BudgetStatusSelectProps)
             STATUS_STYLES[value],
           )}
         >
-          <option value="Concorrência">Concorrência</option>
-          <option value="Aprovado">Aprovado</option>
-          <option value="Produção">Produção</option>
+          {options.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
         </select>
         <ChevronDown
           size={14}

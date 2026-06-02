@@ -12,7 +12,11 @@ interface CreateUserModalProps {
   isSubmitting?: boolean;
 }
 
-export function CreateUserModal({ onCancel, onSubmit, isSubmitting: externalSubmitting = false }: CreateUserModalProps) {
+export function CreateUserModal({
+  onCancel,
+  onSubmit,
+  isSubmitting: externalSubmitting = false,
+}: CreateUserModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -30,17 +34,10 @@ export function CreateUserModal({ onCancel, onSubmit, isSubmitting: externalSubm
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-      >
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-gray-900">Novo usuário</h3>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <button type="button" onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -48,28 +45,14 @@ export function CreateUserModal({ onCancel, onSubmit, isSubmitting: externalSubm
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">Nome</label>
-            <Input
-              placeholder="Nome completo"
-              autoFocus
-              aria-invalid={!!errors.name}
-              {...register("name")}
-            />
-            {errors.name && (
-              <p className="text-xs text-red-500">{errors.name.message}</p>
-            )}
+            <Input placeholder="Nome completo" autoFocus aria-invalid={!!errors.name} {...register("name")} />
+            {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">E-mail</label>
-            <Input
-              type="email"
-              placeholder="nome@empresa.com"
-              aria-invalid={!!errors.email}
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-xs text-red-500">{errors.email.message}</p>
-            )}
+            <Input type="email" placeholder="nome@empresa.com" aria-invalid={!!errors.email} {...register("email")} />
+            {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -79,25 +62,21 @@ export function CreateUserModal({ onCancel, onSubmit, isSubmitting: externalSubm
               className="flex h-9 w-full rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary disabled:cursor-not-allowed disabled:opacity-50"
               {...register("role")}
             >
-              <option value="customer">Cliente</option>
+              <option value="customer">Usuário</option>
               <option value="admin">Administrador</option>
             </select>
-            {errors.role && (
-              <p className="text-xs text-red-500">{errors.role.message}</p>
-            )}
+            {errors.role && <p className="text-xs text-red-500">{errors.role.message}</p>}
           </div>
 
           {role === "customer" && (
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Código do cliente</label>
+              <label className="text-sm font-medium text-gray-700">Função</label>
               <Input
-                placeholder="Ex: CLI001"
+                placeholder="Ex: Financeiro, Contabilidade..."
                 aria-invalid={!!errors.cdCliente}
                 {...register("cdCliente")}
               />
-              {errors.cdCliente && (
-                <p className="text-xs text-red-500">{errors.cdCliente.message}</p>
-              )}
+              {errors.cdCliente && <p className="text-xs text-red-500">{errors.cdCliente.message}</p>}
             </div>
           )}
 
@@ -118,9 +97,7 @@ export function CreateUserModal({ onCancel, onSubmit, isSubmitting: externalSubm
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {errors.password && (
-              <p className="text-xs text-red-500">{errors.password.message}</p>
-            )}
+            {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -140,9 +117,7 @@ export function CreateUserModal({ onCancel, onSubmit, isSubmitting: externalSubm
                 {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {errors.confirmPassword && (
-              <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>
-            )}
+            {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>}
           </div>
         </div>
 

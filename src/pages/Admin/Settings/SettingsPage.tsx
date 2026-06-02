@@ -10,7 +10,6 @@ import { taxConfigSchema, type TaxConfigFormValues } from "./tax-config.schema";
 // Valores iniciais — substituir por useQuery quando API estiver pronta
 const DEFAULT_VALUES: TaxConfigFormValues = {
   nfTaxPercentage: 8.65,
-  issPercentage: 5.0,
 };
 
 export function SettingsPage() {
@@ -58,42 +57,22 @@ export function SettingsPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Imposto NF (%)</label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    aria-invalid={!!errors.nfTaxPercentage}
-                    {...register("nfTaxPercentage", { valueAsNumber: true })}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
-                    %
-                  </span>
-                </div>
-                {errors.nfTaxPercentage && (
-                  <p className="text-xs text-red-500">{errors.nfTaxPercentage.message}</p>
-                )}
+            <div className="max-w-xs space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Imposto NF (%)</label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  step="0.01"
+                  aria-invalid={!!errors.nfTaxPercentage}
+                  {...register("nfTaxPercentage", { valueAsNumber: true })}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                  %
+                </span>
               </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">ISS (%)</label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    aria-invalid={!!errors.issPercentage}
-                    {...register("issPercentage", { valueAsNumber: true })}
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
-                    %
-                  </span>
-                </div>
-                {errors.issPercentage && (
-                  <p className="text-xs text-red-500">{errors.issPercentage.message}</p>
-                )}
-              </div>
+              {errors.nfTaxPercentage && (
+                <p className="text-xs text-red-500">{errors.nfTaxPercentage.message}</p>
+              )}
             </div>
           </CardContent>
         </Card>

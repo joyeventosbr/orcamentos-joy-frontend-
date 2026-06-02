@@ -1,8 +1,9 @@
 import { Button } from "@/src/components/ui/Button/Button";
 import { Card, CardContent } from "@/src/components/ui/Card/Card";
+import { usePermissions } from "@/src/hooks/use-permissions";
 import { ApiBudget } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Calendar, FileText, MoreHorizontal, Search } from "lucide-react";
+import { Calendar, FileText, MoreHorizontal, Search, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface BudgetsViewProps {
@@ -11,8 +12,13 @@ interface BudgetsViewProps {
   onClearFilters: () => void;
 }
 
+function getBudgetDisplayDate(budget: ApiBudget): string {
+  return budget.updatedAt ?? budget.createdAt;
+}
+
 export function BudgetsView({ budgets, viewMode, onClearFilters }: BudgetsViewProps) {
   const navigate = useNavigate();
+  const { canViewEditHistory } = usePermissions();
 
   if (budgets.length === 0) {
     return (
@@ -55,11 +61,17 @@ export function BudgetsView({ budgets, viewMode, onClearFilters }: BudgetsViewPr
               {budget.jobDescription && (
                 <p className="text-sm text-gray-500 truncate">{budget.jobDescription}</p>
               )}
-              <div className="mt-auto pt-6 text-sm">
+              <div className="mt-auto pt-6 space-y-2 text-sm">
                 <div className="flex items-center gap-1.5 text-gray-500">
                   <Calendar size={14} />
-                  {format(new Date(budget.createdAt), "dd/MM/yyyy")}
+                  {format(new Date(getBudgetDisplayDate(budget)), "dd/MM/yyyy")}
                 </div>
+                {canViewEditHistory && budget.lastEditedBy && (
+                  <div className="flex items-center gap-1.5 text-gray-400">
+                    <UserRound size={13} />
+                    <span className="truncate">Última edição: {budget.lastEditedBy.name}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -75,7 +87,10 @@ export function BudgetsView({ budgets, viewMode, onClearFilters }: BudgetsViewPr
           <tr>
             <th className="px-6 py-4 font-medium">Nome do Orçamento</th>
             <th className="px-6 py-4 font-medium">Descrição</th>
-            <th className="px-6 py-4 font-medium">Data de Criação</th>
+            <th className="px-6 py-4 font-medium">
+              {canViewEditHistory ? "Última Atualização" : "Data de Criação"}
+            </th>
+            {canViewEditHistory && <th className="px-6 py-4 font-medium">Editado por</th>}
             <th className="px-6 py-4 font-medium w-10"></th>
           </tr>
         </thead>
@@ -91,8 +106,23 @@ export function BudgetsView({ budgets, viewMode, onClearFilters }: BudgetsViewPr
                 {budget.jobDescription ?? <span className="text-gray-300">—</span>}
               </td>
               <td className="px-6 py-4 text-gray-500">
-                {format(new Date(budget.createdAt), "dd/MM/yyyy")}
+                {format(
+                  new Date(canViewEditHistory ? getBudgetDisplayDate(budget) : budget.createdAt),
+                  "dd/MM/yyyy",
+                )}
               </td>
+              {canViewEditHistory && (
+                <td className="px-6 py-4 text-gray-500">
+                  {budget.lastEditedBy ? (
+                    <div className="flex items-center gap-1.5">
+                      <UserRound size={13} />
+                      <span>{budget.lastEditedBy.name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </td>
+              )}
               <td className="px-6 py-4">
                 <div className="relative group/menu inline-block" onClick={(e) => e.stopPropagation()}>
                   <button className="text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity p-1">

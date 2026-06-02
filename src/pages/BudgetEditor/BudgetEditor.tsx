@@ -1,14 +1,14 @@
 import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
 import { Budget, BudgetItem } from "@/src/types";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
+import { ApprovalConfirmModal } from "./components/ApprovalConfirmModal";
 import { BudgetEditorHeader } from "./components/BudgetEditorHeader";
 import { BudgetSpreadsheet } from "./components/BudgetSpreadsheet";
 import { BudgetSummaryPanel } from "./components/BudgetSummaryPanel";
-import { ProfitabilitySidebar } from "./components/ProfitabilitySidebar";
 import { DeleteCategoryModal } from "./components/DeleteCategoryModal";
-import { ApprovalConfirmModal } from "./components/ApprovalConfirmModal";
+import { ProfitabilitySidebar } from "./components/ProfitabilitySidebar";
 
 export function BudgetEditor() {
   const navigate = useNavigate();
@@ -48,18 +48,24 @@ export function BudgetEditor() {
     setExpandedCategories((prev) => ({ ...prev, [categoryId]: !prev[categoryId] }));
   }, []);
 
-  const handleAddRow = useCallback((categoryId: string) => {
-    const newItem = editor.addRow(categoryId);
-    if (newItem) {
-      setExpandedCategories((prev) => ({ ...prev, [categoryId]: true }));
-      setEditingCell({ id: newItem.id, field: "name" });
-    }
-  }, [editor.addRow]);
+  const handleAddRow = useCallback(
+    (categoryId: string) => {
+      const newItem = editor.addRow(categoryId);
+      if (newItem) {
+        setExpandedCategories((prev) => ({ ...prev, [categoryId]: true }));
+        setEditingCell({ id: newItem.id, field: "name" });
+      }
+    },
+    [editor.addRow],
+  );
 
-  const handleDeleteCategory = useCallback((categoryId: string) => {
-    if (editor.isLocked) return;
-    setCategoryToDelete(categoryId);
-  }, [editor.isLocked]);
+  const handleDeleteCategory = useCallback(
+    (categoryId: string) => {
+      if (editor.isLocked) return;
+      setCategoryToDelete(categoryId);
+    },
+    [editor.isLocked],
+  );
 
   const handleConfirmDeleteCategory = useCallback(() => {
     if (categoryToDelete) {
@@ -68,35 +74,41 @@ export function BudgetEditor() {
     }
   }, [categoryToDelete, editor.deleteCategoryItems]);
 
-  const handleCellClick = useCallback((id: string, field: keyof BudgetItem) => {
-    if (editor.isLocked) return;
-    setEditingCell({ id, field });
-  }, [editor.isLocked]);
+  const handleCellClick = useCallback(
+    (id: string, field: keyof BudgetItem) => {
+      if (editor.isLocked) return;
+      setEditingCell({ id, field });
+    },
+    [editor.isLocked],
+  );
 
   const handleCellBlur = useCallback(() => {
     setEditingCell(null);
   }, []);
 
-  const handleBudgetChange = useCallback((updates: Partial<Budget>) => {
-    if (editor.isLocked) return;
+  const handleBudgetChange = useCallback(
+    (updates: Partial<Budget>) => {
+      if (editor.isLocked) return;
 
-    if (updates.status === "Aprovado") {
-      const { missingFields, inconsistentItems } = editor.runValidation();
-      if (missingFields.length > 0) {
-        toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
+      if (updates.status === "Aprovado") {
+        const { missingFields, inconsistentItems } = editor.runValidation();
+        if (missingFields.length > 0) {
+          toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
+          return;
+        }
+        if (inconsistentItems.length > 0) {
+          toast.error(`Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`);
+          return;
+        }
+        setApprovalError(null);
+        setShowApprovalModal(true);
         return;
       }
-      if (inconsistentItems.length > 0) {
-        toast.error(`Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`);
-        return;
-      }
-      setApprovalError(null);
-      setShowApprovalModal(true);
-      return;
-    }
 
-    editor.updateBudgetFields(updates);
-  }, [editor.isLocked, editor.runValidation, editor.updateBudgetFields]);
+      editor.updateBudgetFields(updates);
+    },
+    [editor.isLocked, editor.runValidation, editor.updateBudgetFields],
+  );
 
   const handleApproveConfirm = useCallback(async () => {
     try {
@@ -175,10 +187,7 @@ export function BudgetEditor() {
       </div>
 
       {categoryToDelete && (
-        <DeleteCategoryModal
-          onConfirm={handleConfirmDeleteCategory}
-          onCancel={() => setCategoryToDelete(null)}
-        />
+        <DeleteCategoryModal onConfirm={handleConfirmDeleteCategory} onCancel={() => setCategoryToDelete(null)} />
       )}
 
       {showApprovalModal && editor.budget && (
@@ -186,7 +195,10 @@ export function BudgetEditor() {
           budget={editor.budget}
           error={approvalError}
           onConfirm={handleApproveConfirm}
-          onCancel={() => { setShowApprovalModal(false); setApprovalError(null); }}
+          onCancel={() => {
+            setShowApprovalModal(false);
+            setApprovalError(null);
+          }}
         />
       )}
     </div>

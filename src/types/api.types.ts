@@ -23,11 +23,16 @@ export interface CreateFolderRequest {
 }
 
 export enum PaymentTerm {
-  THIRTY_DAYS = '30_DAYS',
-  FORTY_FIVE_DAYS = '45_DAYS',
-  SIXTY_DAYS = '60_DAYS',
-  NINETY_DAYS = '90_DAYS',
-  ONE_HUNDRED_TWENTY_DAYS = '120_DAYS',
+  THIRTY_DAYS = "30_DAYS",
+  FORTY_FIVE_DAYS = "45_DAYS",
+  SIXTY_DAYS = "60_DAYS",
+  NINETY_DAYS = "90_DAYS",
+  ONE_HUNDRED_TWENTY_DAYS = "120_DAYS",
+}
+
+export interface BudgetEditorInfo {
+  name: string;
+  email: string;
 }
 
 export interface ApiBudget {
@@ -39,8 +44,10 @@ export interface ApiBudget {
   jobDescription?: string;
   location?: string;
   eventDate?: string;
+  participants?: string;
   paymentTerm?: PaymentTerm;
   updatedAt?: string;
+  lastEditedBy?: BudgetEditorInfo;
 }
 
 export interface CreateBudgetRequest {
@@ -56,6 +63,7 @@ export interface UpdateBudgetRequest {
   jobDescription?: string;
   location?: string;
   eventDate?: string;
+  participants?: string;
   paymentTerm?: PaymentTerm;
 }
 
@@ -91,9 +99,11 @@ export interface UpdateCategoryRequest {
 // --- Budget Lines ---
 
 export enum BillingType {
-  UNIT = 'UNIT',
-  DAILY = 'DAILY',
-  FIXED = 'FIXED',
+  VIA_CLIENTE = "VIA CLIENTE",
+  ND_OU_REPASSE = "ND OU REPASSE",
+  VIA_NF = "VIA NF",
+  OPCIONAL = "OPCIONAL",
+  EXCLUIDO = "EXCLUÍDO",
 }
 
 export interface BudgetLine {

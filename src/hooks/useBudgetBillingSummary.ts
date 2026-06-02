@@ -1,15 +1,9 @@
-import { useMemo } from "react";
 import { BudgetBillingType, BudgetItem } from "@/src/types";
+import { useMemo } from "react";
 
 const JOY_INVOICE_TAX_RATE = 0.18;
 
-export type BillingSummaryKey =
-  | "client"
-  | "joy"
-  | "joyInvoiceTax"
-  | "optional"
-  | "excluded"
-  | "unfilled";
+export type BillingSummaryKey = "client" | "joy" | "joyInvoiceTax" | "optional" | "excluded" | "unfilled";
 
 export interface BillingSummaryMetric {
   key: BillingSummaryKey;
@@ -38,17 +32,13 @@ const billingTypeToSummaryKey: Record<BudgetBillingType, BillingSummaryKey> = {
   EXCLUÍDO: "excluded",
 };
 
-const getBillingSummaryKey = (
-  billingType: BudgetItem["billingType"],
-): BillingSummaryKey => {
+const getBillingSummaryKey = (billingType: BudgetItem["billingType"]): BillingSummaryKey => {
   if (!billingType) return "unfilled";
 
   return billingTypeToSummaryKey[billingType];
 };
 
-export function useBudgetBillingSummary(
-  items: BudgetItem[],
-): BudgetBillingSummary {
+export function useBudgetBillingSummary(items: BudgetItem[]): BudgetBillingSummary {
   return useMemo(() => {
     const summaryByKey: Record<BillingSummaryKey, BillingSummaryMetric> = {
       client: {
@@ -128,22 +118,11 @@ export function useBudgetBillingSummary(
       },
     );
 
-    const totalSuppliers =
-      summaryByKey.client.amount +
-      summaryByKey.joy.amount +
-      summaryByKey.joyInvoiceTax.amount;
+    const totalSuppliers = summaryByKey.client.amount + summaryByKey.joy.amount + summaryByKey.joyInvoiceTax.amount;
 
     return {
-      metrics: [
-        summaryByKey.client,
-        summaryByKey.joy,
-        summaryByKey.joyInvoiceTax,
-        summaryByKey.unfilled,
-      ],
-      secondaryMetrics: [
-        summaryByKey.optional,
-        summaryByKey.excluded,
-      ],
+      metrics: [summaryByKey.client, summaryByKey.joy, summaryByKey.joyInvoiceTax, summaryByKey.unfilled],
+      secondaryMetrics: [summaryByKey.optional, summaryByKey.excluded],
       billingTypeIssues,
       honorariumBase: summaryByKey.client.amount + summaryByKey.joy.amount,
       totalSuppliers,
