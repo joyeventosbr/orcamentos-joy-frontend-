@@ -60,6 +60,8 @@ export interface BudgetItem {
   fornecedorName: string;
   fornecedorValue: number;
   percentBV: number;
+  /** % NF sobre BV; se omitido, usa % BV em itens VIA NF */
+  percentNfBV?: number;
   percentNfOver: number;
 }
 

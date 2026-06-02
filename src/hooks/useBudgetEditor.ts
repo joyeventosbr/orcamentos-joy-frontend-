@@ -281,11 +281,13 @@ export function useBudgetEditor(budgetId: string | undefined) {
     honorariumPercentage,
   );
   const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
-  const profitabilitySummary = useProfitabilitySummary(
-    primaryBudgetItems,
-    internalServicesSummary.subtotal,
-    internalServicesSummary.subtotal + internalServicesSummary.serviceTax + billingSummary.totalSuppliers,
-  );
+  const profitabilitySummary = useProfitabilitySummary({
+    primaryItems: primaryBudgetItems,
+    internalItemsTotal: internalServicesSummary.internalItemsTotal,
+    honorariumPercentage,
+    prazoDias: Number(budget?.deadline) || 0,
+    antecipadoCliente: paymentScheduleSummary.totals.paymentAdvance,
+  });
   const budgetGrandTotal =
     internalServicesSummary.subtotal + internalServicesSummary.serviceTax + billingSummary.totalSuppliers;
 

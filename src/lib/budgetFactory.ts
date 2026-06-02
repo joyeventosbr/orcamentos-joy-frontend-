@@ -27,6 +27,7 @@ export function createBudgetItem(
     fornecedorName: "",
     fornecedorValue: 0,
     percentBV: 0,
+    percentNfBV: undefined,
     percentNfOver: 0,
     ...overrides,
   };

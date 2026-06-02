@@ -1,4 +1,13 @@
 import { BUDGET_CATEGORIES, BudgetItem } from "@/src/types";
+import {
+  calculateProfitabilityItem,
+  calculateProfitabilityResult,
+  mapItemToProfitabilityInput,
+  ProfitabilityResult,
+} from "@/src/lib/profitability";
+
+export type { ProfitabilityClassification } from "@/src/lib/profitability";
+import { DEFAULT_PROFITABILITY_RATES, ProfitabilityRates } from "@/src/lib/profitabilityRates";
 import { useMemo } from "react";
 
 export interface ProfitabilityRow {
@@ -28,24 +37,10 @@ export interface ProfitabilityCategory {
   totals: ProfitabilityTotals;
 }
 
-export interface ProfitabilitySummary {
+export interface ProfitabilitySummary extends ProfitabilityResult {
   categories: ProfitabilityCategory[];
   grandTotals: ProfitabilityTotals;
   totalsViaJoy: ProfitabilityTotals;
-  isRentavel: boolean;
-
-  custosTerceirosJoy: number;
-  impostoJoy18: number;
-  bvOverPre: number;
-  bvOverProd: number;
-  impostoPreSobreBvOver: number;
-  impostoProdSobreBvOver: number;
-  rentabilidadePre: number;
-  rentabilidadeProd: number;
-  percentRentabilidadePre: number;
-  percentRentabilidadeProd: number;
-  isRentavelPre: boolean;
-  isRentavelProd: boolean;
 }
 
 const EMPTY_TOTALS: ProfitabilityTotals = {
@@ -54,8 +49,6 @@ const EMPTY_TOTALS: ProfitabilityTotals = {
   over: 0,
   valorReal: 0,
 };
-
-const TAX_RATE = 0.18;
 
 function sumTotals(items: ProfitabilityRow[]): ProfitabilityTotals {
   return items.reduce(
@@ -69,34 +62,39 @@ function sumTotals(items: ProfitabilityRow[]): ProfitabilityTotals {
   );
 }
 
-export function useProfitabilitySummary(
-  primaryItems: BudgetItem[],
-  internalServicesCost: number,
-  budgetGrandTotal: number,
-): ProfitabilitySummary {
+export interface UseProfitabilitySummaryInput {
+  primaryItems: BudgetItem[];
+  internalItemsTotal: number;
+  honorariumPercentage: number;
+  prazoDias: number;
+  antecipadoCliente: number;
+  rates?: ProfitabilityRates;
+}
+
+export function useProfitabilitySummary({
+  primaryItems,
+  internalItemsTotal,
+  honorariumPercentage,
+  prazoDias,
+  antecipadoCliente,
+  rates = DEFAULT_PROFITABILITY_RATES,
+}: UseProfitabilitySummaryInput): ProfitabilitySummary {
   return useMemo(() => {
     const allRows: ProfitabilityRow[] = primaryItems.map((item) => {
-      const percentBV = item.percentBV || 0;
-      const percentNfOver = item.percentNfOver || 0;
-      const isNf = item.billingType === "VIA NF";
-      const percentNfBV = isNf ? percentBV : 0;
-
+      const metrics = calculateProfitabilityItem(mapItemToProfitabilityInput(item), rates);
       const valorFornecedor = item.fornecedorValue || 0;
-      const rsBV = valorFornecedor * (percentBV / 100);
-      const over = valorFornecedor * (percentNfOver / 100);
-      const valorReal = valorFornecedor - rsBV - over;
 
       return {
         id: item.id,
         categoryId: item.categoryId,
         fornecedor: item.fornecedorName || "",
         valorFornecedor,
-        percentBV,
-        percentNfBV,
-        rsBV,
-        percentNfOver,
-        over,
-        valorReal,
+        percentBV: item.percentBV || 0,
+        percentNfBV: metrics.percentNfBV,
+        rsBV: metrics.rsBV,
+        percentNfOver: item.percentNfOver || 0,
+        over: metrics.over,
+        valorReal: metrics.valorReal,
       };
     });
 
@@ -119,70 +117,20 @@ export function useProfitabilitySummary(
     const joyRows = allRows.filter((r) => joyItemIds.has(r.id));
     const totalsViaJoy = joyRows.length > 0 ? sumTotals(joyRows) : { ...EMPTY_TOTALS };
 
-    // CUSTOS TERCEIROS JOY = soma dos reais valores pagos (fornecedorValue de items via Joy)
-    const custosTerceirosJoy = joyItems.reduce((sum, item) => sum + (item.fornecedorValue || 0), 0);
-
-    // IMPOSTO JOY 18% = imposto sobre fornecedores dentro da nota joy e custos internos
-    const impostoJoy18 = (custosTerceirosJoy + internalServicesCost) * TAX_RATE;
-
-    // BV / OVER PRÉ = BV + Over calculados sobre item.total (valores orçados/concorrência)
-    const bvOverPre = primaryItems.reduce((sum, item) => {
-      const percentBV = item.percentBV || 0;
-      const percentNfOver = item.percentNfOver || 0;
-      const base = item.total || 0;
-      return sum + base * (percentBV / 100) + base * (percentNfOver / 100);
-    }, 0);
-
-    // BV / OVER PROD = BV + Over calculados sobre fornecedorValue (valores reais/produção)
-    const bvOverProd = primaryItems.reduce((sum, item) => {
-      const percentBV = item.percentBV || 0;
-      const percentNfOver = item.percentNfOver || 0;
-      const base = item.fornecedorValue || 0;
-      return sum + base * (percentBV / 100) + base * (percentNfOver / 100);
-    }, 0);
-
-    // IMPOSTO PRÉ SOBRE BV OVER = 18% sobre BV/Over pré
-    const impostoPreSobreBvOver = bvOverPre * TAX_RATE;
-
-    // IMPOSTO PROD SOBRE BV OVER = 18% sobre BV/Over prod
-    const impostoProdSobreBvOver = bvOverProd * TAX_RATE;
-
-    // RENTABILIDADE PRÉ = BV/Over pré - imposto pré
-    const rentabilidadePre = bvOverPre - impostoPreSobreBvOver;
-
-    // RENTABILIDADE PROD = BV/Over prod - imposto prod
-    const rentabilidadeProd = bvOverProd - impostoProdSobreBvOver;
-
-    // % RENTABILIDADE PRÉ = rentabilidade pré / (valor total do evento - custos joy)
-    const valorTotalSemCustosJoy = budgetGrandTotal - custosTerceirosJoy;
-    const percentRentabilidadePre = valorTotalSemCustosJoy > 0 ? (rentabilidadePre / valorTotalSemCustosJoy) * 100 : 0;
-
-    // % RENTABILIDADE PROD = rentabilidade prod / valor total do evento
-    const percentRentabilidadeProd = budgetGrandTotal > 0 ? (rentabilidadeProd / budgetGrandTotal) * 100 : 0;
-
-    const isRentavelPre = rentabilidadePre >= 0;
-    const isRentavelProd = rentabilidadeProd >= 0;
-
-    const totalMargin = grandTotals.rsBV + grandTotals.over;
-    const isRentavel = grandTotals.valorFornecedor === 0 || totalMargin >= 0;
+    const result = calculateProfitabilityResult({
+      primaryItems,
+      internalServicesSubtotal: internalItemsTotal,
+      honorariumPercentage,
+      prazoDias,
+      antecipadoCliente,
+      rates,
+    });
 
     return {
+      ...result,
       categories,
       grandTotals,
       totalsViaJoy,
-      isRentavel,
-      custosTerceirosJoy,
-      impostoJoy18,
-      bvOverPre,
-      bvOverProd,
-      impostoPreSobreBvOver,
-      impostoProdSobreBvOver,
-      rentabilidadePre,
-      rentabilidadeProd,
-      percentRentabilidadePre,
-      percentRentabilidadeProd,
-      isRentavelPre,
-      isRentavelProd,
     };
-  }, [primaryItems, internalServicesCost, budgetGrandTotal]);
+  }, [primaryItems, internalItemsTotal, honorariumPercentage, prazoDias, antecipadoCliente, rates]);
 }

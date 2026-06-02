@@ -1,4 +1,5 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
+import { mapBudgetItemToProfitabilityMetrics } from "@/src/lib/profitability";
 import { calculatePaymentScheduleTotals, PAYMENT_SCHEDULE_COLUMNS } from "@/src/hooks/usePaymentScheduleSummary";
 import { ProfitabilityCategory } from "@/src/hooks/useProfitabilitySummary";
 import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
@@ -118,7 +119,9 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
 
       {/* Item Rows */}
       {isExpanded &&
-        items.map((item, index) => (
+        items.map((item, index) => {
+          const profitabilityMetrics = mapBudgetItemToProfitabilityMetrics(item);
+          return (
           <tr
             key={item.id}
             className={`group hover:bg-gray-50 transition-colors divide-x divide-slate-100 ${index !== items.length - 1 ? "border-b border-slate-100" : ""}`}
@@ -177,23 +180,19 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
               <BudgetTableCell {...cellProps} item={item} field="percentBV" type="number" align="right" />
             </td>
             <td className="align-middle px-3 py-2 text-right text-slate-400 bg-slate-50/50">
-              {item.billingType === "VIA NF" ? `${item.percentBV || 0}%` : "0%"}
+              {`${profitabilityMetrics.percentNfBV || 0}%`}
             </td>
             <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
-              {formatCurrencyBRL((item.fornecedorValue || 0) * ((item.percentBV || 0) / 100))}
+              {formatCurrencyBRL(profitabilityMetrics.rsBV)}
             </td>
             <td className="align-top p-0">
               <BudgetTableCell {...cellProps} item={item} field="percentNfOver" type="number" align="right" />
             </td>
             <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
-              {formatCurrencyBRL((item.fornecedorValue || 0) * ((item.percentNfOver || 0) / 100))}
+              {formatCurrencyBRL(profitabilityMetrics.over)}
             </td>
             <td className="align-middle px-3 py-2 text-right font-semibold text-slate-900 bg-gray-100/50">
-              {formatCurrencyBRL(
-                (item.fornecedorValue || 0) - 
-                ((item.fornecedorValue || 0) * ((item.percentBV || 0) / 100)) - 
-                ((item.fornecedorValue || 0) * ((item.percentNfOver || 0) / 100))
-              )}
+              {formatCurrencyBRL(profitabilityMetrics.valorReal)}
             </td>
 
             <td className="align-middle text-center p-0 border-l-2 border-slate-100">
@@ -208,7 +207,8 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
               )}
             </td>
           </tr>
-        ))}
+          );
+        })}
 
       {/* Payment Schedule Category Total Row */}
       <tr className="border-t border-gray-200 bg-gray-100 text-gray-900">
