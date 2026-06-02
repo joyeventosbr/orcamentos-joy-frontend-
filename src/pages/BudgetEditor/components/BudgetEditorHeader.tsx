@@ -1,7 +1,9 @@
+import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
-import { getBudgetDisplayStatus } from "@/src/lib/budgetStatus";
-import { Budget, BudgetStatus } from "@/src/types";
+import { getBudgetDisplayStatus, getStatusBadgeVariant } from "@/src/lib/budgetStatus";
+import { Budget } from "@/src/types";
 import { ArrowLeft, Download, FileSpreadsheet, FileText, LayoutTemplate, Lock, Save, TrendingUp } from "lucide-react";
+import { BudgetStatusSelect } from "./BudgetStatusSelect";
 
 interface BudgetEditorHeaderProps {
   budget: Budget;
@@ -53,27 +55,18 @@ export function BudgetEditorHeader({
                 }`}
               />
 
+              <div className="w-px h-5 bg-gray-200" aria-hidden />
+
               {isLocked ? (
-                <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-900 text-white">
+                <Badge variant={getStatusBadgeVariant(displayStatus)} className="gap-1.5">
                   <Lock size={12} />
                   {displayStatus}
-                </div>
+                </Badge>
               ) : (
-                <select
+                <BudgetStatusSelect
                   value={budget.status}
-                  onChange={(e) => onBudgetChange({ status: e.target.value as BudgetStatus })}
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border-none outline-none cursor-pointer transition-colors appearance-none text-center ${
-                    budget.status === "Aprovado"
-                      ? "bg-gray-900 text-white"
-                      : budget.status === "Produção"
-                        ? "bg-gray-200 text-gray-800"
-                        : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  <option value="Concorrência">Concorrência</option>
-                  <option value="Aprovado">Aprovado</option>
-                  <option value="Produção">Produção</option>
-                </select>
+                  onChange={(status) => onBudgetChange({ status })}
+                />
               )}
 
               <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">

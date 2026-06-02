@@ -1,5 +1,5 @@
 import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
-import { BUDGET_CATEGORIES, Budget, BudgetItem } from "@/src/types";
+import { Budget, BudgetItem } from "@/src/types";
 import React, { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
@@ -27,7 +27,7 @@ export function BudgetEditor() {
   useEffect(() => {
     const newExpanded = { ...expandedCategories };
     let changed = false;
-    BUDGET_CATEGORIES.forEach((cat) => {
+    editor.categories.forEach((cat) => {
       if (newExpanded[cat.id] === undefined) {
         newExpanded[cat.id] = true;
         changed = true;
@@ -40,7 +40,7 @@ export function BudgetEditor() {
       }
     });
     if (changed) setExpandedCategories(newExpanded);
-  }, [editor.groupedItems]);
+  }, [editor.groupedItems, editor.categories]);
 
   // --- UI Handlers ---
 
@@ -114,7 +114,7 @@ export function BudgetEditor() {
       <div className="flex h-full flex-col items-center justify-center bg-background">
         <div className="rounded-2xl border border-border bg-card px-6 py-5 text-center shadow-sm">
           <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Carregando orçamento</div>
-          <div className="mt-2 text-sm text-muted-foreground">Simulando busca dos dados locais.</div>
+          <div className="mt-2 text-sm text-muted-foreground">Buscando dados da API...</div>
         </div>
       </div>
     );

@@ -1,145 +1,108 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from 'react';
-import { Client, Job, Budget } from '../types';
-import { budgetService, ApprovalResult } from '@/src/services/budgetService';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, ReactNode } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ApiBudget, Customer, Folder } from '@/src/types/api.types';
+import { customersKeys } from '@/src/api/customers/customers.keys';
+import { customersReq } from '@/src/api/customers/customers.req';
+import { foldersKeys } from '@/src/api/folders/folders.keys';
+import { foldersReq } from '@/src/api/folders/folders.req';
+import { budgetsKeys } from '@/src/api/budgets/budgets.keys';
+import { budgetsReq } from '@/src/api/budgets/budgets.req';
 
 interface AppDataContextType {
-  clients: Client[];
-  jobs: Job[];
-  budgets: Budget[];
+  customers: Customer[];
+  folders: Folder[];
+  budgets: ApiBudget[];
   isLoading: boolean;
-  addClient: (name: string) => Promise<Client>;
-  deleteClient: (id: string) => Promise<void>;
-  addJob: (clientId: string, name: string) => Promise<Job>;
-  deleteJob: (id: string) => Promise<void>;
-  addBudget: (input: { jobId: string; name: string }) => Promise<Budget>;
-  updateBudget: (id: string, budget: Budget) => Promise<Budget>;
+  addCustomer: (name: string) => Promise<Customer>;
+  deleteCustomer: (id: string) => Promise<void>;
+  addFolder: (customerId: string, name: string) => Promise<Folder>;
+  deleteFolder: (id: string) => Promise<void>;
+  addBudget: (input: { folderId: string; customerId: string; name: string }) => Promise<ApiBudget>;
   deleteBudget: (id: string) => Promise<void>;
-  duplicateBudget: (id: string) => Promise<Budget | null>;
-  approveBudget: (id: string) => Promise<ApprovalResult>;
 }
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const { currentUser } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    let isMounted = true;
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
+    queryKey: customersKeys.queries.list,
+    queryFn: customersReq.list,
+  });
 
-    budgetService.getInitialData().then((data) => {
-      if (!isMounted) return;
+  const { data: folders = [], isLoading: foldersLoading } = useQuery({
+    queryKey: foldersKeys.queries.list,
+    queryFn: foldersReq.list,
+  });
 
-      setClients(data.clients);
-      setJobs(data.jobs);
-      setBudgets(data.budgets);
-      setIsLoading(false);
-    });
+  const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
+    queryKey: budgetsKeys.queries.list,
+    queryFn: budgetsReq.list,
+  });
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const isLoading = customersLoading || foldersLoading || budgetsLoading;
 
-  // --- Client ---
+  const createCustomerMutation = useMutation({
+    mutationFn: customersReq.create,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: customersKeys.queries.list }),
+  });
 
-  const addClient = async (name: string) => {
-    const newClient = await budgetService.createClient(name);
-    setClients((prev) => [...prev, newClient]);
-    return newClient;
-  };
+  const deleteCustomerMutation = useMutation({
+    mutationFn: customersReq.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: customersKeys.queries.list }),
+  });
 
-  const deleteClient = async (id: string) => {
-    await budgetService.deleteClient(id);
-    const jobIds = jobs.filter((j) => j.clientId === id).map((j) => j.id);
-    setClients((prev) => prev.filter((c) => c.id !== id));
-    setJobs((prev) => prev.filter((j) => j.clientId !== id));
-    setBudgets((prev) => prev.filter((b) => !jobIds.includes(b.jobId)));
-  };
+  const createFolderMutation = useMutation({
+    mutationFn: foldersReq.create,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: foldersKeys.queries.list }),
+  });
 
-  // --- Job ---
+  const deleteFolderMutation = useMutation({
+    mutationFn: foldersReq.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: foldersKeys.queries.list }),
+  });
 
-  const addJob = async (clientId: string, name: string) => {
-    const newJob = await budgetService.createJob(clientId, name);
-    setJobs((prev) => [...prev, newJob]);
-    return newJob;
-  };
+  const createBudgetMutation = useMutation({
+    mutationFn: budgetsReq.create,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.list }),
+  });
 
-  const deleteJob = async (id: string) => {
-    await budgetService.deleteJob(id);
-    setJobs((prev) => prev.filter((j) => j.id !== id));
-    setBudgets((prev) => prev.filter((b) => b.jobId !== id));
-  };
+  const deleteBudgetMutation = useMutation({
+    mutationFn: budgetsReq.remove,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.list }),
+  });
 
-  // --- Budget ---
+  const addCustomer = (name: string) =>
+    createCustomerMutation.mutateAsync({ name });
 
-  const addBudget = async (input: { jobId: string; name: string }) => {
-    const newBudget = await budgetService.createBudget(input);
-    setBudgets((prev) => [...prev, newBudget]);
-    return newBudget;
-  };
+  const deleteCustomer = (id: string) =>
+    deleteCustomerMutation.mutateAsync(id);
 
-  const updateBudget = async (id: string, updatedBudget: Budget) => {
-    const editor = currentUser ?? undefined;
-    const savedBudget = await budgetService.updateBudget(id, updatedBudget, editor);
-    setBudgets((prev) =>
-      prev.map((budget) => (budget.id === id ? savedBudget : budget)),
-    );
-    return savedBudget;
-  };
+  const addFolder = (customerId: string, name: string) =>
+    createFolderMutation.mutateAsync({ customerId, name });
 
-  const deleteBudget = async (id: string) => {
-    await budgetService.deleteBudget(id);
-    setBudgets((prev) => prev.filter((budget) => budget.id !== id));
-  };
+  const deleteFolder = (id: string) =>
+    deleteFolderMutation.mutateAsync(id);
 
-  const duplicateBudget = async (id: string) => {
-    const duplicatedBudget = await budgetService.duplicateBudget(id);
-    if (duplicatedBudget) {
-      setBudgets((prev) => [...prev, duplicatedBudget]);
-    }
-    return duplicatedBudget;
-  };
+  const addBudget = (input: { folderId: string; customerId: string; name: string }) =>
+    createBudgetMutation.mutateAsync(input);
 
-  // --- Approval Workflow ---
-
-  const approveBudget = async (id: string) => {
-    const result = await budgetService.approveBudget(id);
-    setBudgets((prev) => {
-      let updated = [...prev, result.approvedCopy];
-      if (result.productionCopy) {
-        updated = [...updated, result.productionCopy];
-      }
-      return updated;
-    });
-    return result;
-  };
+  const deleteBudget = (id: string) =>
+    deleteBudgetMutation.mutateAsync(id);
 
   return (
     <AppDataContext.Provider value={{
-      clients,
-      jobs,
+      customers,
+      folders,
       budgets,
       isLoading,
-      addClient,
-      deleteClient,
-      addJob,
-      deleteJob,
+      addCustomer,
+      deleteCustomer,
+      addFolder,
+      deleteFolder,
       addBudget,
-      updateBudget,
       deleteBudget,
-      duplicateBudget,
-      approveBudget,
     }}>
       {children}
     </AppDataContext.Provider>

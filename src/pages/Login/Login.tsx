@@ -1,29 +1,44 @@
 import joyLogo from "@/src/assets/joy-logo.png";
 import oLogo from "@/src/assets/PRETO_o_logo_joy.png";
+import { useLoginMutation } from "@/src/api/auth/auth.caller";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/src/components/ui/Card/Card";
 import { Input } from "@/src/components/ui/Input/Input";
-import { useAuth } from "@/src/context/AuthContext";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-
-function nameFromEmail(email: string): string {
-  const local = email.split("@")[0] ?? email;
-  return local.charAt(0).toUpperCase() + local.slice(1);
-}
+import { loginSchema, type LoginFormValues } from "./login.schema";
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("felipe@joyeventos.com.br");
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const loginMutation = useLoginMutation();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = email.trim();
-    login(nameFromEmail(trimmed), trimmed);
-    navigate("/");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const onSubmit = (data: LoginFormValues) => {
+    setApiError(null);
+    loginMutation.mutate(data, {
+      onSuccess: () => navigate("/"),
+      onError: (error) => {
+        const message =
+          error instanceof Error ? error.message : "E-mail ou senha inválidos.";
+        setApiError(message);
+        toast.error(message);
+      },
+    });
   };
 
   return (
@@ -45,41 +60,67 @@ export function Login() {
 
           <Card className="border-gray-200 shadow-sm relative z-10 w-full">
             <CardHeader className="space-y-1 pb-6 text-center">
-              <CardTitle className="text-2xl font-semibold tracking-tight">Bem-vindo ao Sistema JOY</CardTitle>
-              <CardDescription>Insira suas credenciais para acessar seu espaço de trabalho</CardDescription>
+              <CardTitle className="text-2xl font-semibold tracking-tight">
+                Bem-vindo ao Sistema JOY
+              </CardTitle>
+              <CardDescription>
+                Insira suas credenciais para acessar seu espaço de trabalho
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none text-gray-700">E-mail</label>
+                  <label className="text-sm font-medium leading-none text-gray-700">
+                    E-mail
+                  </label>
                   <Input
                     type="email"
                     placeholder="nome@empresa.com"
-                    value={email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                    required
+                    aria-invalid={!!errors.email}
+                    {...register("email")}
                   />
+                  {errors.email && (
+                    <p className="text-xs text-red-500">{errors.email.message}</p>
+                  )}
                 </div>
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium leading-none text-gray-700">Senha</label>
+                  <label className="text-sm font-medium leading-none text-gray-700">
+                    Senha
+                  </label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
-                      defaultValue="password123"
-                      required
+                      aria-invalid={!!errors.password}
+                      {...register("password")}
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowPassword((v) => !v)}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  {errors.password && (
+                    <p className="text-xs text-red-500">{errors.password.message}</p>
+                  )}
                 </div>
-                <Button type="submit" className="w-full mt-2 cursor-pointer hover:bg-brand-primary/90" size="lg">
-                  Entrar
+
+                {apiError && (
+                  <p className="text-sm text-red-500 text-center" role="alert">
+                    {apiError}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full mt-2"
+                  size="lg"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
             </CardContent>

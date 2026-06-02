@@ -1,19 +1,19 @@
 import { Card, CardContent } from "@/src/components/ui/Card/Card";
 import { Button } from "@/src/components/ui/Button/Button";
-import { Client, Job } from "@/src/types";
+import { Customer, Folder } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Calendar, Folder, MoreHorizontal, Users } from "lucide-react";
+import { Calendar, FolderOpen, MoreHorizontal, Users } from "lucide-react";
 
 interface ClientsViewProps {
-  clients: Client[];
-  jobs: Job[];
+  customers: Customer[];
+  folders: Folder[];
   viewMode: "grid" | "table";
-  onSelectClient: (clientId: string) => void;
+  onSelectCustomer: (customerId: string) => void;
   onClearSearch: () => void;
 }
 
-export function ClientsView({ clients, jobs, viewMode, onSelectClient, onClearSearch }: ClientsViewProps) {
-  if (clients.length === 0) {
+export function ClientsView({ customers, folders, viewMode, onSelectCustomer, onClearSearch }: ClientsViewProps) {
+  if (customers.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-8">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
@@ -33,29 +33,31 @@ export function ClientsView({ clients, jobs, viewMode, onSelectClient, onClearSe
   if (viewMode === "grid") {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {clients.map((client) => {
-          const clientJobs = jobs.filter((j) => j.clientId === client.id);
+        {customers.map((customer) => {
+          const customerFolders = folders.filter((f) => f.customerId === customer.id);
           return (
             <Card
-              key={client.id}
+              key={customer.id}
               className="group hover:border-brand-primary/30 hover:shadow-md transition-all cursor-pointer flex flex-col"
-              onClick={() => onSelectClient(client.id)}
+              onClick={() => onSelectCustomer(customer.id)}
             >
               <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-10 h-10 rounded-lg bg-brand-primary/10 flex items-center justify-center text-brand-primary">
-                    <Folder size={20} />
+                    <FolderOpen size={20} />
                   </div>
                   <button className="text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
                     <MoreHorizontal size={20} />
                   </button>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-snug">{client.name}</h3>
-                <p className="text-sm text-gray-500">{clientJobs.length} job{clientJobs.length !== 1 ? "s" : ""}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-snug">{customer.name}</h3>
+                <p className="text-sm text-gray-500">
+                  {customerFolders.length} pasta{customerFolders.length !== 1 ? "s" : ""}
+                </p>
                 <div className="mt-auto pt-6 flex items-center justify-between text-sm">
                   <div className="flex items-center gap-1.5 text-gray-500">
                     <Calendar size={14} />
-                    {format(new Date(client.updatedAt), "dd/MM/yyyy")}
+                    {format(new Date(customer.createdAt), "dd/MM/yyyy")}
                   </div>
                 </div>
               </CardContent>
@@ -72,27 +74,27 @@ export function ClientsView({ clients, jobs, viewMode, onSelectClient, onClearSe
         <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-medium">
           <tr>
             <th className="px-6 py-4 font-medium">Cliente</th>
-            <th className="px-6 py-4 font-medium">Jobs</th>
-            <th className="px-6 py-4 font-medium">Última Atualização</th>
+            <th className="px-6 py-4 font-medium">Pastas</th>
+            <th className="px-6 py-4 font-medium">Data de Cadastro</th>
             <th className="px-6 py-4 font-medium w-10"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {clients.map((client) => {
-            const clientJobs = jobs.filter((j) => j.clientId === client.id);
+          {customers.map((customer) => {
+            const customerFolders = folders.filter((f) => f.customerId === customer.id);
             return (
               <tr
-                key={client.id}
+                key={customer.id}
                 className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
-                onClick={() => onSelectClient(client.id)}
+                onClick={() => onSelectCustomer(customer.id)}
               >
                 <td className="px-6 py-4 font-medium text-gray-900 flex items-center gap-3">
-                  <Folder size={16} className="text-brand-primary" />
-                  {client.name}
+                  <FolderOpen size={16} className="text-brand-primary" />
+                  {customer.name}
                 </td>
-                <td className="px-6 py-4 text-gray-500">{clientJobs.length}</td>
+                <td className="px-6 py-4 text-gray-500">{customerFolders.length}</td>
                 <td className="px-6 py-4 text-gray-500">
-                  {format(new Date(client.updatedAt), "dd/MM/yyyy")}
+                  {format(new Date(customer.createdAt), "dd/MM/yyyy")}
                 </td>
                 <td className="px-6 py-4">
                   <button className="text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">

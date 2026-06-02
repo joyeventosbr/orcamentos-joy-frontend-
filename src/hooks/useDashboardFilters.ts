@@ -1,54 +1,48 @@
-import { Budget, BudgetFolder, Client, Job, getBudgetFolder } from "@/src/types";
+import { ApiBudget, Customer, Folder } from '@/src/types/api.types';
 
 interface UseDashboardFiltersParams {
-  clients: Client[];
-  jobs: Job[];
-  budgets: Budget[];
-  currentClientId: string | null;
-  currentJobId: string | null;
-  activeFolder: BudgetFolder;
+  customers: Customer[];
+  folders: Folder[];
+  budgets: ApiBudget[];
+  currentCustomerId: string | null;
+  currentFolderId: string | null;
   searchQuery: string;
 }
 
 export function useDashboardFilters({
-  clients,
-  jobs,
+  customers,
+  folders,
   budgets,
-  currentClientId,
-  currentJobId,
-  activeFolder,
+  currentCustomerId,
+  currentFolderId,
   searchQuery,
 }: UseDashboardFiltersParams) {
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
-  const currentClient =
-    clients.find((c) => c.id === currentClientId) ?? null;
+  const currentCustomer = customers.find((c) => c.id === currentCustomerId) ?? null;
+  const currentFolder = folders.find((f) => f.id === currentFolderId) ?? null;
 
-  const currentJob =
-    jobs.find((j) => j.id === currentJobId) ?? null;
-
-  const filteredClients = clients.filter((client) =>
-    client.name.toLowerCase().includes(normalizedSearch),
+  const filteredCustomers = customers.filter((customer) =>
+    customer.name.toLowerCase().includes(normalizedSearch),
   );
 
-  const filteredJobs = jobs.filter((job) => {
-    const matchesClient = job.clientId === currentClientId;
-    const matchesSearch = job.name.toLowerCase().includes(normalizedSearch);
-    return matchesClient && matchesSearch;
+  const filteredFolders = folders.filter((folder) => {
+    const matchesCustomer = folder.customerId === currentCustomerId;
+    const matchesSearch = folder.name.toLowerCase().includes(normalizedSearch);
+    return matchesCustomer && matchesSearch;
   });
 
   const filteredBudgets = budgets.filter((budget) => {
-    const matchesJob = budget.jobId === currentJobId;
-    const matchesFolder = getBudgetFolder(budget) === activeFolder;
+    const matchesFolder = budget.folderId === currentFolderId;
     const matchesSearch = budget.name.toLowerCase().includes(normalizedSearch);
-    return matchesJob && matchesFolder && matchesSearch;
+    return matchesFolder && matchesSearch;
   });
 
   return {
-    currentClient,
-    currentJob,
-    filteredClients,
-    filteredJobs,
+    currentCustomer,
+    currentFolder,
+    filteredCustomers,
+    filteredFolders,
     filteredBudgets,
   };
 }

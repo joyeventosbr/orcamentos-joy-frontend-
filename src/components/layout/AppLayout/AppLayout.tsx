@@ -1,21 +1,55 @@
 import joyLogo from "@/src/assets/joy-logo.png";
-import { useAuth } from "@/src/context/AuthContext";
+import { useAuth } from "@/src/hooks/use-auth";
+import { usePermissions } from "@/src/hooks/use-permissions";
 import { cn } from "@/src/lib/utils";
-import { ChevronLeft, ChevronRight, LayoutDashboard, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutDashboard, LogOut, Settings, Shield, Users } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+}
+
+const MAIN_NAV: NavItem[] = [{ icon: LayoutDashboard, label: "Painel", path: "/" }];
+
+const ADMIN_NAV: NavItem[] = [
+  { icon: Users, label: "Usuários", path: "/admin/users" },
+  { icon: Settings, label: "Configurações", path: "/admin/settings" },
+];
+
+function NavItemLink({ item, isCollapsed }: { item: NavItem; isCollapsed: boolean }) {
+  return (
+    <NavLink
+      key={item.path}
+      to={item.path}
+      end={item.path === "/"}
+      title={isCollapsed ? item.label : undefined}
+      className={({ isActive }) =>
+        cn(
+          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+          isActive ? "bg-brand-primary/10 text-brand-primary" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+          isCollapsed && "justify-center px-0",
+        )
+      }
+    >
+      <item.icon size={18} className="shrink-0" />
+      {!isCollapsed && <span>{item.label}</span>}
+    </NavLink>
+  );
+}
 
 export function AppLayout() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
+  const { isAdmin } = usePermissions();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
-
-  const navItems = [{ icon: LayoutDashboard, label: "Painel", path: "/" }];
 
   return (
     <div className="flex h-screen w-full bg-gray-50 text-gray-900 font-sans">
@@ -35,42 +69,41 @@ export function AppLayout() {
         </button>
 
         <div className="h-16 flex items-center justify-center border-b border-gray-100 overflow-hidden px-4">
-          {isCollapsed ? (
-            <img src={joyLogo} alt="Joy Eventos" className="h-6 object-contain" />
-          ) : (
-            <img src={joyLogo} alt="Joy Eventos" className="h-9 object-contain" />
-          )}
+          <img src={joyLogo} alt="Joy Eventos" className={cn("object-contain", isCollapsed ? "h-6" : "h-9")} />
         </div>
 
         <div className="flex-1 py-6 px-3 flex flex-col gap-1 overflow-y-auto overflow-x-hidden">
           {!isCollapsed && (
             <div className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu</div>
           )}
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              title={isCollapsed ? item.label : undefined}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-brand-primary/10 text-brand-primary"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
-                  isCollapsed && "justify-center px-0",
-                )
-              }
-            >
-              <item.icon size={18} className="flex-shrink-0" />
-              {!isCollapsed && <span>{item.label}</span>}
-            </NavLink>
+          {MAIN_NAV.map((item) => (
+            <NavItemLink key={item.path} item={item} isCollapsed={isCollapsed} />
           ))}
+
+          {isAdmin && (
+            <>
+              <div className={cn("mt-4 mb-2", isCollapsed ? "border-t border-gray-100 pt-4" : "")}>
+                {!isCollapsed && (
+                  <div className="px-3 mb-2 flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    <Shield size={11} />
+                    Administração
+                  </div>
+                )}
+              </div>
+              {ADMIN_NAV.map((item) => (
+                <NavItemLink key={item.path} item={item} isCollapsed={isCollapsed} />
+              ))}
+            </>
+          )}
         </div>
 
         <div className="p-4 border-t border-gray-100 space-y-2">
           {currentUser && !isCollapsed && (
             <div className="px-3 py-2">
-              <p className="text-sm font-medium text-gray-900 truncate">{currentUser.name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium text-gray-900 truncate">{currentUser.name}</p>
+                {isAdmin && <Shield size={11} className="text-brand-primary shrink-0" />}
+              </div>
               <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
             </div>
           )}
