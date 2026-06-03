@@ -1,11 +1,11 @@
 import { budgetLinesReq } from "@/src/api/budget-lines/budget-lines.req";
+import { budgetsKeys } from "@/src/api/budgets/budgets.keys";
 import {
   buildBulkRequest,
   mapBudgetToUpdateRequest,
   mapDetailToBudget,
   mapLineToItem,
 } from "@/src/api/budgets/budgets.mappers";
-import { budgetsKeys } from "@/src/api/budgets/budgets.keys";
 import { budgetsReq } from "@/src/api/budgets/budgets.req";
 import { categoriesKeys } from "@/src/api/categories/categories.keys";
 import { categoriesReq } from "@/src/api/categories/categories.req";
@@ -13,16 +13,12 @@ import { useBudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
 import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
 import { usePaymentScheduleSummary } from "@/src/hooks/usePaymentScheduleSummary";
 import { ProfitabilityCategory, useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
-import { buildStableGroupedItems } from "@/src/lib/budgetGroupedItems";
-import { buildStableProfitabilityCategoryMap } from "@/src/lib/stableProfitabilityMap";
 import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from "@/src/lib/budgetFactory";
+import { buildStableGroupedItems } from "@/src/lib/budgetGroupedItems";
 import { IBudgetValidationResult, validateBudget } from "@/src/lib/budgetValidation";
+import { buildStableProfitabilityCategoryMap } from "@/src/lib/stableProfitabilityMap";
 import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage } from "@/src/types";
-import {
-  ApiBudget,
-  BulkUpdateBudgetLinesRequest,
-  UpdateBudgetRequest,
-} from "@/src/types/api.types";
+import { ApiBudget, BulkUpdateBudgetLinesRequest, UpdateBudgetRequest } from "@/src/types/api.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -254,59 +250,62 @@ export function useBudgetEditor(budgetId: string | undefined) {
     mutationFn: (body: BulkUpdateBudgetLinesRequest) => budgetLinesReq.bulkUpdate(body),
   });
 
-  const saveBudget = useCallback(async (headerOverrides?: Partial<Budget>): Promise<boolean> => {
-    const budgetToSave = budget && headerOverrides ? { ...budget, ...headerOverrides } : budget;
-    if (!budgetToSave || !budgetId) return false;
+  const saveBudget = useCallback(
+    async (headerOverrides?: Partial<Budget>): Promise<boolean> => {
+      const budgetToSave = budget && headerOverrides ? { ...budget, ...headerOverrides } : budget;
+      if (!budgetToSave || !budgetId) return false;
 
-    const { missingFields, inconsistentItems } = validateBudget(budgetToSave);
-    if (missingFields.length > 0) {
-      toast.error(`Preencha os campos obrigatórios: ${missingFields.join(", ")}`);
-      return false;
-    }
-    if (inconsistentItems.length > 0) {
-      toast.error(`${inconsistentItems.length} item(ns) com valor preenchido sem tipo de faturamento`);
-      return false;
-    }
+      const { missingFields, inconsistentItems } = validateBudget(budgetToSave);
+      if (missingFields.length > 0) {
+        toast.error(`Preencha os campos obrigatórios: ${missingFields.join(", ")}`);
+        return false;
+      }
+      if (inconsistentItems.length > 0) {
+        toast.error(`${inconsistentItems.length} item(ns) com valor preenchido sem tipo de faturamento`);
+        return false;
+      }
 
-    if (headerOverrides && budget) {
-      setBudget(budgetToSave);
-    }
+      if (headerOverrides && budget) {
+        setBudget(budgetToSave);
+      }
 
-    await updateBudgetMutation.mutateAsync({
-      id: budgetId,
-      body: mapBudgetToUpdateRequest(budgetToSave),
-    });
+      await updateBudgetMutation.mutateAsync({
+        id: budgetId,
+        body: mapBudgetToUpdateRequest(budgetToSave),
+      });
 
-    const bulk = buildBulkRequest(budgetToSave.items, originalLineIdsRef.current, budgetId);
-    if (bulk.create?.length || bulk.update?.length || bulk.delete?.length) {
-      const savedLines = await bulkUpdateMutation.mutateAsync(bulk);
-      const newlyCreatedIds = savedLines.map((l) => l.id);
-      const survivingOriginalIds = [...originalLineIdsRef.current].filter((id) => !bulk.delete?.includes(id));
-      originalLineIdsRef.current = new Set([...survivingOriginalIds, ...newlyCreatedIds]);
-    }
+      const bulk = buildBulkRequest(budgetToSave.items, originalLineIdsRef.current, budgetId);
+      if (bulk.create?.length || bulk.update?.length || bulk.delete?.length) {
+        const savedLines = await bulkUpdateMutation.mutateAsync(bulk);
+        const newlyCreatedIds = savedLines.map((l) => l.id);
+        const survivingOriginalIds = [...originalLineIdsRef.current].filter((id) => !bulk.delete?.includes(id));
+        originalLineIdsRef.current = new Set([...survivingOriginalIds, ...newlyCreatedIds]);
+      }
 
-    await queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.detail(budgetId) });
-    const detail = await queryClient.fetchQuery({
-      queryKey: budgetsKeys.queries.detail(budgetId),
-      queryFn: () => budgetsReq.details(budgetId),
-      staleTime: 0,
-    });
+      await queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.detail(budgetId) });
+      const detail = await queryClient.fetchQuery({
+        queryKey: budgetsKeys.queries.detail(budgetId),
+        queryFn: () => budgetsReq.details(budgetId),
+        staleTime: 0,
+      });
 
-    const items = detail.lines.map(mapLineToItem);
-    setBudget({
-      ...mapDetailToBudget(detail),
-      items,
-      totalValue: recalculateBudgetTotal(items),
-    });
-    originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
+      const items = detail.lines.map(mapLineToItem);
+      setBudget({
+        ...mapDetailToBudget(detail),
+        items,
+        totalValue: recalculateBudgetTotal(items),
+      });
+      originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
 
-    patchBudgetListEditMetadata(queryClient, budgetId, detail.updatedAt ?? detail.createdAt, {
-      createdBy: detail.createdBy,
-      updatedBy: detail.updatedBy,
-    });
-    toast.success("Orçamento salvo com sucesso!");
-    return true;
-  }, [budget, budgetId, updateBudgetMutation, bulkUpdateMutation, queryClient]);
+      patchBudgetListEditMetadata(queryClient, budgetId, detail.updatedAt ?? detail.createdAt, {
+        createdBy: detail.createdBy,
+        updatedBy: detail.updatedBy,
+      });
+      toast.success("Orçamento salvo com sucesso!");
+      return true;
+    },
+    [budget, budgetId, updateBudgetMutation, bulkUpdateMutation, queryClient],
+  );
 
   const handleApprove = useCallback(async (): Promise<void> => {
     if (!budget) return;

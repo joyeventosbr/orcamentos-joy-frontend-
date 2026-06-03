@@ -168,7 +168,6 @@ export function BudgetEditor() {
       honorariumPercentage: editor.honorariumPercentage,
       advancePayment: editor.paymentScheduleSummary.totals.paymentAdvance,
       profitabilitySummary: editor.profitabilitySummary,
-      primaryBudgetItems: editor.primaryBudgetItems,
       onHonorariumPercentageChange: editor.updateHonorariumPercentage,
     }),
     [
@@ -180,7 +179,6 @@ export function BudgetEditor() {
       editor.internalServicesSummary,
       editor.honorariumPercentage,
       editor.profitabilitySummary,
-      editor.primaryBudgetItems,
       editor.updateHonorariumPercentage,
     ],
   );

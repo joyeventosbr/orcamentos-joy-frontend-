@@ -1,12 +1,9 @@
 import { ProfitabilityClassification, ProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { formatCurrencyBRL } from "@/src/lib/formatters";
-import { BudgetItem, TBudgetItemUpdater } from "@/src/types";
 
 interface ProfitabilitySidebarProps {
   isOpen: boolean;
   summary: ProfitabilitySummary;
-  items: BudgetItem[];
-  onUpdateItem: TBudgetItemUpdater;
 }
 
 function MetricLine({

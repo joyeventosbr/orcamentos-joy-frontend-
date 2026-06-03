@@ -4,7 +4,7 @@ import { PaymentScheduleTotals } from "@/src/hooks/usePaymentScheduleSummary";
 import { ProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { BudgetSummaryPanel } from "@/src/pages/BudgetEditor/components/BudgetSummaryPanel";
 import { ProfitabilitySidebar } from "@/src/pages/BudgetEditor/components/ProfitabilitySidebar";
-import { BudgetItem, HonorariumPercentage } from "@/src/types";
+import { HonorariumPercentage } from "@/src/types";
 import { memo } from "react";
 
 type InternalServicesSummary = ReturnType<typeof useInternalServicesSummary>;
@@ -20,7 +20,6 @@ export type BudgetEditorSidebarsProps = {
   honorariumPercentage: HonorariumPercentage;
   advancePayment: number;
   profitabilitySummary: ProfitabilitySummary;
-  primaryBudgetItems: BudgetItem[];
   onHonorariumPercentageChange: (value: HonorariumPercentage) => void;
 };
 
@@ -35,7 +34,6 @@ export const BudgetEditorSidebars = memo(function BudgetEditorSidebars({
   honorariumPercentage,
   advancePayment,
   profitabilitySummary,
-  primaryBudgetItems,
   onHonorariumPercentageChange,
 }: BudgetEditorSidebarsProps) {
   return (
@@ -52,14 +50,7 @@ export const BudgetEditorSidebars = memo(function BudgetEditorSidebars({
         advancePayment={advancePayment}
         onHonorariumPercentageChange={onHonorariumPercentageChange}
       />
-      <ProfitabilitySidebar
-        isOpen={activeSidebar === "profitability"}
-        summary={profitabilitySummary}
-        items={primaryBudgetItems}
-        onUpdateItem={function (id: string, field: keyof BudgetItem, value: string | number): void {
-          throw new Error("Function not implemented.");
-        }}
-      />
+      <ProfitabilitySidebar isOpen={activeSidebar === "profitability"} summary={profitabilitySummary} />
     </>
   );
 });
