@@ -89,6 +89,7 @@ function mapDetailToBudget(detail: BudgetDetail): Budget {
     location: detail.location ?? "",
     date: detail.eventDate ?? "",
     participants: detail.participants ?? "",
+    taxNf: detail.taxNf,
   };
 }
 

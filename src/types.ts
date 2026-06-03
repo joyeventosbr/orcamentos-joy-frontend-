@@ -89,6 +89,8 @@ export interface Budget {
   date?: string;
   participants?: string;
   honorariumPercentage?: HonorariumPercentage;
+  /** Fator NF gravado na criação do orçamento (snapshot da API). */
+  taxNf: number;
 }
 
 export type TBudgetItemUpdater = (id: string, field: keyof BudgetItem, value: string | number) => void;

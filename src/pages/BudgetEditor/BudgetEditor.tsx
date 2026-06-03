@@ -168,6 +168,7 @@ export function BudgetEditor() {
 
         <BudgetSummaryPanel
           isOpen={activeSidebar === "summary"}
+          taxNf={editor.budget.taxNf}
           grandTotal={editor.budgetGrandTotal}
           billingSummary={editor.billingSummary}
           paymentTotals={editor.paymentScheduleSummary.totals}

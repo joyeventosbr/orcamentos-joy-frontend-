@@ -69,9 +69,25 @@ export interface UpdateBudgetRequest {
 
 // --- Budget Detail (GET /budgets/:id/details) ---
 
+export interface Setting {
+  id: string;
+  key: string;
+  value: string;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export const SETTING_KEY_TAX_NF = "TAX_NF" as const;
+
+export interface UpdateSettingRequest {
+  value?: string;
+  key?: string;
+}
+
 export interface BudgetDetail extends ApiBudget {
   customerName: string;
   folderName: string;
+  taxNf: number;
   lines: BudgetLine[];
 }
 

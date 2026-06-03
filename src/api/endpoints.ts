@@ -43,7 +43,9 @@ export const API_ENDPOINTS = {
     bulkUpdate: "/budget-lines/bulk",
     delete: (id: string) => `/budget-lines/${id}`,
   },
-  nf: {
-    taxConfig: "/settings/tax",
+  settings: {
+    list: "/settings",
+    byKey: (key: string) => `/settings/key/${encodeURIComponent(key)}`,
+    update: (id: string) => `/settings/${id}`,
   },
 } as const;
