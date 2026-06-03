@@ -1,6 +1,7 @@
-export type BudgetStatus = "Concorrência" | "Aprovado" | "Produção";
+export { BudgetStatus } from "@/src/types/api.types";
 
-export type BudgetPhase = "concorrencia" | "producao";
+import { BudgetStatus } from "@/src/types/api.types";
+import { getBudgetFolderTab } from "@/src/lib/budgetStatus";
 
 export const BUDGET_FOLDER_OPTIONS = ["concorrencia", "aprovados", "producao"] as const;
 
@@ -70,9 +71,10 @@ export interface Budget {
   jobId: string;
   name: string;
   status: BudgetStatus;
-  phase: BudgetPhase;
-  isLocked: boolean;
-  sourceBudgetId?: string;
+  isEditable: boolean;
+  isDeletable: boolean;
+  parentId: string | null;
+  version: number;
   totalValue: number;
   lastUpdated: string;
   /** Nome do criador (ADMIN only na API) */
@@ -94,13 +96,5 @@ export interface Budget {
 export type TBudgetItemUpdater = (id: string, field: keyof BudgetItem, value: string | number) => void;
 
 export function getBudgetFolder(budget: Budget): BudgetFolder {
-  if (budget.status === "Aprovado") return "aprovados";
-  return budget.phase === "producao" ? "producao" : "concorrencia";
-}
-
-export function getApprovalLabel(budget: Budget): string {
-  if (budget.status !== "Aprovado") return budget.status;
-  return budget.phase === "concorrencia"
-    ? "Aprovado Concorrência"
-    : "Aprovado Produção";
+  return getBudgetFolderTab(budget.status);
 }

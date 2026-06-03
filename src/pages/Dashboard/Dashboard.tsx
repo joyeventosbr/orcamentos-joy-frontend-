@@ -1,13 +1,17 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAppData } from "../../context/AppDataContext";
 import { useDashboardFilters } from "@/src/hooks/useDashboardFilters";
+import { BUDGET_FOLDER_OPTIONS, BudgetFolder } from "@/src/types";
 import { CreateEntityModal } from "./components/CreateEntityModal";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardToolbar } from "./components/DashboardToolbar";
 import { ClientsView } from "./components/ClientsView";
 import { JobsView } from "./components/JobsView";
 import { BudgetsView } from "./components/BudgetsView";
+import { DeleteBudgetModal } from "./components/DeleteBudgetModal";
+import { ApiBudget } from "@/src/types/api.types";
 
 type DashboardLevel = "customers" | "folders" | "budgets";
 
@@ -18,8 +22,14 @@ export function Dashboard() {
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [budgetFolderTab, setBudgetFolderTab] = useState<BudgetFolder>("concorrencia");
+  const [duplicatingBudgetId, setDuplicatingBudgetId] = useState<string | null>(null);
+  const [deletingBudgetId, setDeletingBudgetId] = useState<string | null>(null);
+  const [budgetToDelete, setBudgetToDelete] = useState<ApiBudget | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const { customers, folders, budgets, isLoading, addCustomer, addFolder, addBudget } = useAppData();
+  const { customers, folders, budgets, isLoading, addCustomer, addFolder, addBudget, copyBudget, deleteBudget } =
+    useAppData();
 
   const { currentCustomer, currentFolder, filteredCustomers, filteredFolders, filteredBudgets } =
     useDashboardFilters({
@@ -29,6 +39,7 @@ export function Dashboard() {
       currentCustomerId,
       currentFolderId,
       searchQuery,
+      budgetFolderTab: currentFolderId ? budgetFolderTab : undefined,
     });
 
   const level: DashboardLevel = currentFolderId ? "budgets" : currentCustomerId ? "folders" : "customers";
@@ -49,10 +60,50 @@ export function Dashboard() {
 
   const handleSelectFolder = (folderId: string) => {
     setSearchQuery("");
+    setBudgetFolderTab("concorrencia");
     setCurrentFolderId(folderId);
   };
 
+  const budgetTabLabels: Record<BudgetFolder, string> = {
+    concorrencia: "Concorrência",
+    aprovados: "Aprovados",
+    producao: "Produção",
+  };
+
   const handleNew = () => setIsModalOpen(true);
+
+  const handleRequestDeleteBudget = (budget: ApiBudget) => {
+    setDeleteError(null);
+    setBudgetToDelete(budget);
+  };
+
+  const handleConfirmDeleteBudget = async () => {
+    if (!budgetToDelete) return;
+    setDeletingBudgetId(budgetToDelete.id);
+    setDeleteError(null);
+    try {
+      await deleteBudget(budgetToDelete.id);
+      toast.success("Orçamento excluído com sucesso!");
+      setBudgetToDelete(null);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Falha ao excluir orçamento");
+    } finally {
+      setDeletingBudgetId(null);
+    }
+  };
+
+  const handleDuplicateBudget = async (budgetId: string) => {
+    setDuplicatingBudgetId(budgetId);
+    try {
+      const copied = await copyBudget(budgetId);
+      toast.success("Orçamento duplicado com sucesso!");
+      navigate(`/editor/${copied.id}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao duplicar orçamento");
+    } finally {
+      setDuplicatingBudgetId(null);
+    }
+  };
 
   const handleCreateEntity = async (name: string) => {
     if (level === "customers") {
@@ -106,6 +157,25 @@ export function Dashboard() {
         onViewModeChange={setViewMode}
       />
 
+      {level === "budgets" && (
+        <div className="px-8 pb-4 flex gap-2">
+          {BUDGET_FOLDER_OPTIONS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setBudgetFolderTab(tab)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                budgetFolderTab === tab
+                  ? "bg-brand-primary text-white"
+                  : "bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300"
+              }`}
+            >
+              {budgetTabLabels[tab]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex-1 overflow-auto px-8 pb-8">
         {level === "customers" && (
           <ClientsView
@@ -129,10 +199,27 @@ export function Dashboard() {
           <BudgetsView
             budgets={filteredBudgets}
             viewMode={viewMode}
+            onDuplicate={handleDuplicateBudget}
+            onDelete={handleRequestDeleteBudget}
+            duplicatingBudgetId={duplicatingBudgetId}
+            deletingBudgetId={deletingBudgetId}
             onClearFilters={() => setSearchQuery("")}
           />
         )}
       </div>
+
+      {budgetToDelete && (
+        <DeleteBudgetModal
+          budgetName={budgetToDelete.name}
+          error={deleteError}
+          isDeleting={deletingBudgetId === budgetToDelete.id}
+          onConfirm={() => void handleConfirmDeleteBudget()}
+          onCancel={() => {
+            setBudgetToDelete(null);
+            setDeleteError(null);
+          }}
+        />
+      )}
 
       {isModalOpen && (
         <CreateEntityModal

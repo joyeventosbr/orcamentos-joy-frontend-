@@ -1,4 +1,5 @@
 import { budgetLinesReq } from "@/src/api/budget-lines/budget-lines.req";
+import { fetchBudgetDetailFresh, refreshBudgetCaches } from "@/src/api/budgets/budgets.cache";
 import { budgetsKeys } from "@/src/api/budgets/budgets.keys";
 import {
   buildBulkRequest,
@@ -18,31 +19,10 @@ import { buildStableGroupedItems } from "@/src/lib/budgetGroupedItems";
 import { IBudgetValidationResult, validateBudget } from "@/src/lib/budgetValidation";
 import { buildStableProfitabilityCategoryMap } from "@/src/lib/stableProfitabilityMap";
 import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage } from "@/src/types";
-import { ApiBudget, BulkUpdateBudgetLinesRequest, UpdateBudgetRequest } from "@/src/types/api.types";
+import { BulkUpdateBudgetLinesRequest, UpdateBudgetRequest } from "@/src/types/api.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-
-function patchBudgetListEditMetadata(
-  queryClient: ReturnType<typeof useQueryClient>,
-  budgetId: string,
-  updatedAt: string,
-  audit?: Pick<ApiBudget, "createdBy" | "updatedBy">,
-) {
-  queryClient.setQueryData<ApiBudget[]>(budgetsKeys.queries.list, (current) => {
-    if (!current) return current;
-    return current.map((item) =>
-      item.id === budgetId
-        ? {
-            ...item,
-            updatedAt,
-            ...(audit?.createdBy !== undefined && { createdBy: audit.createdBy }),
-            ...(audit?.updatedBy !== undefined && { updatedBy: audit.updatedBy }),
-          }
-        : item,
-    );
-  });
-}
 
 // --- Hook ---
 
@@ -83,7 +63,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
   }, [budgetDetail]);
 
   const isLoading = budgetLoading || categoriesLoading;
-  const isLocked = false;
+  const isLocked = budget ? !budget.isEditable : false;
 
   // Categorias dinâmicas da API; fallback para o catálogo estático enquanto carrega
   const categories = useMemo<BudgetCategory[]>(() => {
@@ -282,12 +262,8 @@ export function useBudgetEditor(budgetId: string | undefined) {
         originalLineIdsRef.current = new Set([...survivingOriginalIds, ...newlyCreatedIds]);
       }
 
-      await queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.detail(budgetId) });
-      const detail = await queryClient.fetchQuery({
-        queryKey: budgetsKeys.queries.detail(budgetId),
-        queryFn: () => budgetsReq.details(budgetId),
-        staleTime: 0,
-      });
+      await refreshBudgetCaches(queryClient, budgetId);
+      const detail = await fetchBudgetDetailFresh(queryClient, budgetId);
 
       const items = detail.lines.map(mapLineToItem);
       setBudget({
@@ -297,22 +273,37 @@ export function useBudgetEditor(budgetId: string | undefined) {
       });
       originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
 
-      patchBudgetListEditMetadata(queryClient, budgetId, detail.updatedAt ?? detail.createdAt, {
-        createdBy: detail.createdBy,
-        updatedBy: detail.updatedBy,
-      });
       toast.success("Orçamento salvo com sucesso!");
       return true;
     },
     [budget, budgetId, updateBudgetMutation, bulkUpdateMutation, queryClient],
   );
 
+  const approveMutation = useMutation({
+    mutationFn: () => budgetsReq.approve(budgetId!),
+  });
+
   const handleApprove = useCallback(async (): Promise<void> => {
-    if (!budget) return;
+    if (!budget || !budgetId) return;
     const saved = await saveBudget();
     if (!saved) throw new Error("Falha ao salvar antes de aprovar.");
-    toast.success("Aprovação será integrada na próxima fase.");
-  }, [budget, saveBudget]);
+
+    const created = await approveMutation.mutateAsync();
+
+    await refreshBudgetCaches(queryClient, budgetId);
+    const detail = await fetchBudgetDetailFresh(queryClient, budgetId);
+
+    const items = detail.lines.map(mapLineToItem);
+    setBudget({
+      ...mapDetailToBudget(detail),
+      items,
+      totalValue: recalculateBudgetTotal(items),
+    });
+    originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
+
+    const countLabel = created.length === 2 ? "2 versões" : "1 versão";
+    toast.success(`Aprovação concluída. ${countLabel} criada(s) na pasta.`);
+  }, [budget, budgetId, saveBudget, approveMutation, queryClient]);
 
   return {
     budget,

@@ -1,6 +1,7 @@
 import { Button } from "@/src/components/ui/Button/Button";
 import { Budget } from "@/src/types";
-import { AlertTriangle, Lock, Copy } from "lucide-react";
+import { BudgetStatus } from "@/src/types/api.types";
+import { AlertTriangle, Copy, Lock } from "lucide-react";
 
 interface ApprovalConfirmModalProps {
   budget: Budget;
@@ -10,7 +11,7 @@ interface ApprovalConfirmModalProps {
 }
 
 export function ApprovalConfirmModal({ budget, error, onConfirm, onCancel }: ApprovalConfirmModalProps) {
-  const isConcorrencia = budget.phase === "concorrencia";
+  const isConcorrencia = budget.status === BudgetStatus.Concorrencia;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -24,15 +25,20 @@ export function ApprovalConfirmModal({ budget, error, onConfirm, onCancel }: App
           </div>
 
           <p className="text-sm text-gray-600 mb-4">
-            Ao aprovar o orçamento <strong>"{budget.name}"</strong>, as seguintes ações serão executadas:
+            Ao aprovar o orçamento <strong>"{budget.name}"</strong>, serão criadas novas versões com cópia
+            integral das linhas. O orçamento atual permanece na pasta e continua editável.
           </p>
 
           <div className="space-y-3 mb-4">
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
               <Lock size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Bloqueio de edição</p>
-                <p className="text-xs text-gray-500">Este orçamento será bloqueado permanentemente para edição.</p>
+                <p className="text-sm font-medium text-gray-900">Snapshot aprovado</p>
+                <p className="text-xs text-gray-500">
+                  {isConcorrencia
+                    ? "Será criada uma versão somente leitura em Aprovados (Concorrência)."
+                    : "Será criada uma versão somente leitura em Aprovados (Produção)."}
+                </p>
               </div>
             </div>
 
@@ -42,7 +48,7 @@ export function ApprovalConfirmModal({ budget, error, onConfirm, onCancel }: App
                 <div>
                   <p className="text-sm font-medium text-gray-900">Cópia de Produção</p>
                   <p className="text-xs text-gray-500">
-                    Uma cópia editável será criada automaticamente na pasta Produção.
+                    Uma cópia editável será criada automaticamente na aba Produção.
                   </p>
                 </div>
               </div>
@@ -60,10 +66,7 @@ export function ApprovalConfirmModal({ budget, error, onConfirm, onCancel }: App
           <Button variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button
-            onClick={onConfirm}
-            className="bg-black hover:bg-gray-800 text-white border-black"
-          >
+          <Button onClick={onConfirm} className="bg-black hover:bg-gray-800 text-white border-black">
             Confirmar Aprovação
           </Button>
         </div>

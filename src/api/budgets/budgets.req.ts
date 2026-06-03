@@ -14,4 +14,9 @@ export const budgetsReq = {
     apiClient.put<ApiBudget>(API_ENDPOINTS.budgets.update(id), body).then((r) => r.data),
 
   remove: (id: string) => apiClient.delete(API_ENDPOINTS.budgets.delete(id)).then(() => undefined),
+
+  approve: (id: string) =>
+    apiClient.patch<ApiBudget[]>(API_ENDPOINTS.budgets.approve(id)).then((r) => r.data),
+
+  copy: (id: string) => apiClient.post<ApiBudget>(API_ENDPOINTS.budgets.copy(id)).then((r) => r.data),
 };

@@ -6,6 +6,7 @@ import { customersKeys } from '@/src/api/customers/customers.keys';
 import { customersReq } from '@/src/api/customers/customers.req';
 import { foldersKeys } from '@/src/api/folders/folders.keys';
 import { foldersReq } from '@/src/api/folders/folders.req';
+import { invalidateBudgetList, removeBudgetDetailCache } from '@/src/api/budgets/budgets.cache';
 import { budgetsKeys } from '@/src/api/budgets/budgets.keys';
 import { budgetsReq } from '@/src/api/budgets/budgets.req';
 
@@ -19,6 +20,7 @@ interface AppDataContextType {
   addFolder: (customerId: string, name: string) => Promise<Folder>;
   deleteFolder: (id: string) => Promise<void>;
   addBudget: (input: { folderId: string; customerId: string; name: string }) => Promise<ApiBudget>;
+  copyBudget: (id: string) => Promise<ApiBudget>;
   deleteBudget: (id: string) => Promise<void>;
 }
 
@@ -44,6 +46,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     queryKey: budgetsKeys.queries.list,
     queryFn: budgetsReq.list,
     enabled: isAuthenticated,
+    staleTime: 0,
   });
 
   const isLoading = customersLoading || foldersLoading || budgetsLoading;
@@ -70,12 +73,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const createBudgetMutation = useMutation({
     mutationFn: budgetsReq.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.list }),
+    onSuccess: async () => invalidateBudgetList(queryClient),
+  });
+
+  const copyBudgetMutation = useMutation({
+    mutationFn: budgetsReq.copy,
   });
 
   const deleteBudgetMutation = useMutation({
     mutationFn: budgetsReq.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.list }),
+    onSuccess: async () => invalidateBudgetList(queryClient),
   });
 
   const addCustomer = useCallback(
@@ -104,9 +111,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [createBudgetMutation.mutateAsync],
   );
 
+  const copyBudget = useCallback(
+    async (id: string) => {
+      const copied = await copyBudgetMutation.mutateAsync(id);
+      await invalidateBudgetList(queryClient);
+      return copied;
+    },
+    [copyBudgetMutation.mutateAsync, queryClient],
+  );
+
   const deleteBudget = useCallback(
-    (id: string) => deleteBudgetMutation.mutateAsync(id),
-    [deleteBudgetMutation.mutateAsync],
+    async (id: string) => {
+      await deleteBudgetMutation.mutateAsync(id);
+      removeBudgetDetailCache(queryClient, id);
+      await invalidateBudgetList(queryClient);
+    },
+    [deleteBudgetMutation.mutateAsync, queryClient],
   );
 
   const value = useMemo<AppDataContextType>(
@@ -120,13 +140,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       addFolder,
       deleteFolder,
       addBudget,
+      copyBudget,
       deleteBudget,
     }),
     [
       customers, folders, budgets, isLoading,
       addCustomer, deleteCustomer,
       addFolder, deleteFolder,
-      addBudget, deleteBudget,
+      addBudget, copyBudget, deleteBudget,
     ],
   );
 

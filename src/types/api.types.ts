@@ -30,11 +30,24 @@ export enum PaymentTerm {
   ONE_HUNDRED_TWENTY_DAYS = "120_DAYS",
 }
 
+export enum BudgetStatus {
+  Concorrencia = 1,
+  AprovadoConcorrencia = 2,
+  Producao = 3,
+  AprovadoProducao = 4,
+}
+
 export interface ApiBudget {
   id: string;
   name: string;
   customerId: string;
   folderId: string;
+  taxNf: number;
+  status: BudgetStatus;
+  isEditable: boolean;
+  isDeletable: boolean;
+  parentId: string | null;
+  version: number;
   createdAt: string;
   jobDescription?: string;
   location?: string;

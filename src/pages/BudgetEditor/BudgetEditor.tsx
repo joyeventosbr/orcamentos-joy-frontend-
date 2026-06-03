@@ -24,7 +24,6 @@ export function BudgetEditor() {
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
-
   useEffect(() => {
     const newExpanded = { ...expandedCategories };
     let changed = false;
@@ -90,26 +89,24 @@ export function BudgetEditor() {
   const handleBudgetChange = useCallback(
     (updates: Partial<Budget>) => {
       if (editor.isLocked) return;
-
-      if (updates.status === "Aprovado") {
-        const { missingFields, inconsistentItems } = editor.runValidation();
-        if (missingFields.length > 0) {
-          toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
-          return;
-        }
-        if (inconsistentItems.length > 0) {
-          toast.error(`Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`);
-          return;
-        }
-        setApprovalError(null);
-        setShowApprovalModal(true);
-        return;
-      }
-
       editor.updateBudgetFields(updates);
     },
-    [editor.isLocked, editor.runValidation, editor.updateBudgetFields],
+    [editor.isLocked, editor.updateBudgetFields],
   );
+
+  const handleOpenApprovalModal = useCallback(() => {
+    const { missingFields, inconsistentItems } = editor.runValidation();
+    if (missingFields.length > 0) {
+      toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
+      return;
+    }
+    if (inconsistentItems.length > 0) {
+      toast.error(`Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`);
+      return;
+    }
+    setApprovalError(null);
+    setShowApprovalModal(true);
+  }, [editor.runValidation]);
 
   const toggleSummarySidebar = useCallback(() => {
     setActiveSidebar((current) => (current === "summary" ? null : "summary"));
@@ -223,6 +220,7 @@ export function BudgetEditor() {
         onSave={(headerUpdates) => void editor.saveBudget(headerUpdates)}
         onNavigateBack={() => navigate("/")}
         onExportExcel={handleExportExcel}
+        onApprove={handleOpenApprovalModal}
       />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">

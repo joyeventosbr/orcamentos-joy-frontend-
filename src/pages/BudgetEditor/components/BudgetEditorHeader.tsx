@@ -1,11 +1,25 @@
 import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
-import { getBudgetDisplayStatus, getStatusBadgeVariant } from "@/src/lib/budgetStatus";
+import {
+  canApproveBudget,
+  getBudgetDisplayStatus,
+  getStatusBadgeVariant,
+  shouldShowBudgetVersion,
+} from "@/src/lib/budgetStatus";
 import { ExcelExportVariant } from "@/src/lib/budgetExcelExport";
 import { Budget } from "@/src/types";
-import { ArrowLeft, Download, FileSpreadsheet, FileText, LayoutTemplate, Lock, Save, TrendingUp } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  LayoutTemplate,
+  Lock,
+  Save,
+  TrendingUp,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { BudgetStatusSelect } from "./BudgetStatusSelect";
 
 type HeaderDraftFields = Pick<Budget, "name" | "client" | "job" | "location" | "date" | "participants">;
 
@@ -30,6 +44,7 @@ interface BudgetEditorHeaderProps {
   onSave: (pendingHeaderUpdates?: Partial<HeaderDraftFields>) => void;
   onNavigateBack: () => void;
   onExportExcel: (variant: ExcelExportVariant) => void;
+  onApprove?: () => void;
 }
 
 export function BudgetEditorHeader({
@@ -42,6 +57,7 @@ export function BudgetEditorHeader({
   onSave,
   onNavigateBack,
   onExportExcel,
+  onApprove,
 }: BudgetEditorHeaderProps) {
   const [draft, setDraft] = useState(() => budgetToDraft(budget));
   const isEditingRef = useRef(false);
@@ -80,7 +96,7 @@ export function BudgetEditorHeader({
   };
 
   const displayStatus = getBudgetDisplayStatus(budget);
-  const phaseLabel = budget.phase === "concorrencia" ? "Concorrência" : "Produção";
+  const showApprove = !isLocked && onApprove && canApproveBudget(budget.status);
 
   const isClientEmpty = !isLocked && !draft.client.trim();
   const isJobEmpty = !isLocked && !draft.job.trim();
@@ -114,22 +130,16 @@ export function BudgetEditorHeader({
 
               <div className="w-px h-5 bg-gray-200" aria-hidden />
 
-              {isLocked ? (
-                <Badge variant={getStatusBadgeVariant(displayStatus)} className="gap-1.5">
-                  <Lock size={12} />
-                  {displayStatus}
-                </Badge>
-              ) : (
-                <BudgetStatusSelect
-                  phase={budget.phase}
-                  value={budget.status}
-                  onChange={(status) => onBudgetChange({ status })}
-                />
-              )}
+              <Badge variant={getStatusBadgeVariant(budget.status)} className="gap-1.5">
+                {isLocked && <Lock size={12} />}
+                {displayStatus}
+              </Badge>
 
-              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">
-                {phaseLabel}
-              </span>
+              {shouldShowBudgetVersion(budget) && (
+                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600">
+                  v{budget.version}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -179,6 +189,16 @@ export function BudgetEditorHeader({
               </div>
             </div>
           </div>
+          {showApprove && (
+            <Button
+              variant="outline"
+              onClick={onApprove}
+              className="gap-2 text-gray-900 border-gray-300 hover:bg-gray-100"
+            >
+              <CheckCircle size={16} />
+              Aprovar
+            </Button>
+          )}
           {!isLocked && (
             <Button onClick={handleSave} className="gap-2 bg-black hover:bg-gray-800 text-white border-black">
               <Save size={16} />

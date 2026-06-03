@@ -1,3 +1,5 @@
+import { getBudgetFolderTab } from '@/src/lib/budgetStatus';
+import { BudgetFolder } from '@/src/types';
 import { ApiBudget, Customer, Folder } from '@/src/types/api.types';
 
 interface UseDashboardFiltersParams {
@@ -7,6 +9,7 @@ interface UseDashboardFiltersParams {
   currentCustomerId: string | null;
   currentFolderId: string | null;
   searchQuery: string;
+  budgetFolderTab?: BudgetFolder;
 }
 
 export function useDashboardFilters({
@@ -16,6 +19,7 @@ export function useDashboardFilters({
   currentCustomerId,
   currentFolderId,
   searchQuery,
+  budgetFolderTab,
 }: UseDashboardFiltersParams) {
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
@@ -35,7 +39,9 @@ export function useDashboardFilters({
   const filteredBudgets = budgets.filter((budget) => {
     const matchesFolder = budget.folderId === currentFolderId;
     const matchesSearch = budget.name.toLowerCase().includes(normalizedSearch);
-    return matchesFolder && matchesSearch;
+    const matchesTab =
+      budgetFolderTab == null || getBudgetFolderTab(budget.status) === budgetFolderTab;
+    return matchesFolder && matchesSearch && matchesTab;
   });
 
   return {
