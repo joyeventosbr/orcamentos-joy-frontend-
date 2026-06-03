@@ -1,6 +1,70 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
 import { BILLING_TYPE_OPTIONS, BudgetItem, TBudgetItemUpdater } from "@/src/types";
-import React, { memo } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
+
+function numberToDraft(value: number): string {
+  if (value === 0) return "";
+  return String(value);
+}
+
+function parseDraftNumber(raw: string): number {
+  const normalized = raw.trim().replace(",", ".");
+  if (normalized === "" || normalized === "-" || normalized === ".") return 0;
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+}
+
+const DRAFT_NUMBER_PATTERN = /^-?\d*[.,]?\d*$/;
+
+function EditableNumberInput({
+  value,
+  align,
+  onCommit,
+  onBlur,
+}: {
+  value: number;
+  align: "left" | "right";
+  onCommit: (value: number) => void;
+  onBlur: () => void;
+}) {
+  const [draft, setDraft] = useState(() => numberToDraft(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  }, []);
+
+  const commit = () => onCommit(parseDraftNumber(draft));
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      className={`w-full h-8 bg-white border-2 border-gray-300 outline-none px-2 py-1 text-sm rounded shadow-sm text-${align}`}
+      value={draft}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (next === "" || DRAFT_NUMBER_PATTERN.test(next)) {
+          setDraft(next);
+        }
+      }}
+      onBlur={() => {
+        commit();
+        onBlur();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          commit();
+          onBlur();
+        }
+      }}
+    />
+  );
+}
 
 interface BudgetTableCellProps {
   item: BudgetItem;
@@ -21,6 +85,7 @@ const CURRENCY_FIELDS = [
   "payment45d",
   "payment60d",
   "payment90d",
+  "payment120d",
   "fornecedorValue",
 ];
 const PERCENT_FIELDS = ["percentBV", "percentNfOver"];
@@ -91,17 +156,27 @@ export const BudgetTableCell = memo(function BudgetTableCell({
       );
     }
 
+    if (type === "number") {
+      return (
+        <div className="h-full w-full px-1 py-1">
+          <EditableNumberInput
+            value={Number(item[field]) || 0}
+            align={align}
+            onCommit={(val) => onUpdate(item.id, field, val)}
+            onBlur={onCellBlur}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="h-full w-full px-1 py-1">
         <input
           autoFocus
-          type={type}
+          type="text"
           className={`w-full h-8 bg-white border-2 border-gray-300 outline-none px-2 py-1 text-sm rounded shadow-sm text-${align}`}
-          value={item[field] as string | number}
-          onChange={(e) => {
-            const val = type === "number" ? parseFloat(e.target.value) || 0 : e.target.value;
-            onUpdate(item.id, field, val);
-          }}
+          value={item[field] as string}
+          onChange={(e) => onUpdate(item.id, field, e.target.value)}
           onBlur={onCellBlur}
           onKeyDown={(e) => {
             if (e.key === "Enter") onCellBlur();
@@ -114,7 +189,7 @@ export const BudgetTableCell = memo(function BudgetTableCell({
   let displayValue: React.ReactNode = item[field] as string | number;
 
   if (CURRENCY_FIELDS.includes(field as string)) {
-    displayValue = formatCurrencyBRL(item[field] as number);
+    displayValue = formatCurrencyBRL(Number(item[field]) || 0);
   } else if (PERCENT_FIELDS.includes(field as string)) {
     const val = item[field] as number;
     displayValue = `${(val || 0).toFixed(1)}%`;

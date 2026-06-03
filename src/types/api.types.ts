@@ -114,7 +114,7 @@ export interface BudgetLine {
   order: number;
   name: string;
   description: string;
-  billingType: BillingType;
+  billingType: BillingType | null;
   quantity: number;
   dailyRates: number;
   unitValue: number;
@@ -127,6 +127,10 @@ export interface BudgetLine {
   installment120Days: number;
   billingUnitValue: number;
   billingTotalValue: number;
+  supplier: string | null;
+  supplierValue: number | null;
+  percentBv: number | null;
+  percentNfOver: number | null;
 }
 
 export interface CreateBudgetLineRequest {
@@ -136,7 +140,7 @@ export interface CreateBudgetLineRequest {
   order: number;
   name: string;
   description?: string;
-  billingType?: BillingType;
+  billingType?: BillingType | null;
   quantity?: number;
   dailyRates?: number;
   unitValue?: number;
@@ -149,6 +153,10 @@ export interface CreateBudgetLineRequest {
   installment120Days?: number;
   billingUnitValue?: number;
   billingTotalValue?: number;
+  supplier?: string | null;
+  supplierValue?: number | null;
+  percentBv?: number | null;
+  percentNfOver?: number | null;
 }
 
 export interface UpdateBudgetLineRequest {
@@ -157,7 +165,7 @@ export interface UpdateBudgetLineRequest {
   order?: number;
   name?: string;
   description?: string;
-  billingType?: BillingType;
+  billingType?: BillingType | null;
   quantity?: number;
   dailyRates?: number;
   unitValue?: number;
@@ -170,6 +178,10 @@ export interface UpdateBudgetLineRequest {
   installment120Days?: number;
   billingUnitValue?: number;
   billingTotalValue?: number;
+  supplier?: string | null;
+  supplierValue?: number | null;
+  percentBv?: number | null;
+  percentNfOver?: number | null;
 }
 
 export interface BulkUpdateBudgetLinesRequest {

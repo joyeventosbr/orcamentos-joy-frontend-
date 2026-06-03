@@ -99,7 +99,7 @@ function mapLineToItem(line: BudgetLine): BudgetItem {
     itemNumber: `${line.categoryCode}.${line.order}`,
     name: line.name,
     description: line.description,
-    billingType: line.billingType as BudgetItem["billingType"],
+    billingType: (line.billingType ?? "") as BudgetItem["billingType"],
     quantity: line.quantity,
     days: line.dailyRates,
     unitPrice: line.unitValue,
@@ -109,17 +109,31 @@ function mapLineToItem(line: BudgetLine): BudgetItem {
     payment45d: line.installment45Days,
     payment60d: line.installment60Days,
     payment90d: line.installment90Days,
-    payment120d: line.installment120Days,
-    fornecedorName: "",
-    fornecedorValue: 0,
-    percentBV: 0,
-    percentNfOver: 0,
+    payment120d: line.installment120Days ?? 0,
+    fornecedorName: line.supplier ?? "",
+    fornecedorValue: line.supplierValue ?? 0,
+    percentBV: line.percentBv ?? 0,
+    percentNfOver: line.percentNfOver ?? 0,
   };
 }
 
-function toApiBillingType(billingType: BudgetItem["billingType"]): BillingType | undefined {
-  if (!billingType) return undefined;
+function toApiBillingType(billingType: BudgetItem["billingType"]): BillingType | null {
+  if (!billingType) return null;
   return billingType as BillingType;
+}
+
+function toApiSupplier(name: string): string | null {
+  const trimmed = name.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function mapItemProfitabilityToApi(item: BudgetItem) {
+  return {
+    supplier: toApiSupplier(item.fornecedorName),
+    supplierValue: item.fornecedorValue,
+    percentBv: item.percentBV,
+    percentNfOver: item.percentNfOver,
+  };
 }
 
 function extractOrder(itemNumber: string): number {
@@ -146,6 +160,7 @@ function mapItemToCreateRequest(item: BudgetItem, budgetId: string): CreateBudge
     installment60Days: item.payment60d,
     installment90Days: item.payment90d,
     installment120Days: item.payment120d,
+    ...mapItemProfitabilityToApi(item),
   };
 }
 
@@ -167,6 +182,7 @@ function mapItemToUpdateRequest(item: BudgetItem): UpdateBudgetLineRequest & { i
     installment60Days: item.payment60d,
     installment90Days: item.payment90d,
     installment120Days: item.payment120d,
+    ...mapItemProfitabilityToApi(item),
   };
 }
 
