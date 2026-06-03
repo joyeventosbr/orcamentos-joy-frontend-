@@ -1,4 +1,5 @@
 import { PageLoader } from "@/src/components/ui/PageLoader/PageLoader";
+import { ExcelExportVariant, exportBudgetToExcel } from "@/src/lib/budgetExcelExport";
 import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
 import { Budget, BudgetItem } from "@/src/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -195,6 +196,19 @@ export function BudgetEditor() {
     }
   }, [editor.handleApprove]);
 
+  const handleExportExcel = useCallback(
+    async (variant: ExcelExportVariant) => {
+      if (!editor.budget) return;
+      try {
+        await exportBudgetToExcel(editor.budget, variant);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Erro ao exportar para Excel.";
+        toast.error(message);
+      }
+    },
+    [editor.budget],
+  );
+
   if (editor.isLoading || !editor.budget) {
     return <PageLoader className="bg-background" />;
   }
@@ -210,6 +224,7 @@ export function BudgetEditor() {
         onToggleProfitability={toggleProfitabilitySidebar}
         onSave={(headerUpdates) => void editor.saveBudget(headerUpdates)}
         onNavigateBack={() => navigate("/")}
+        onExportExcel={handleExportExcel}
       />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">

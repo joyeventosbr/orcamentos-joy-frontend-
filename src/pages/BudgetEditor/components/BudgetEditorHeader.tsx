@@ -1,6 +1,7 @@
 import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
 import { getBudgetDisplayStatus, getStatusBadgeVariant } from "@/src/lib/budgetStatus";
+import { ExcelExportVariant } from "@/src/lib/budgetExcelExport";
 import { Budget } from "@/src/types";
 import { ArrowLeft, Download, FileSpreadsheet, FileText, LayoutTemplate, Lock, Save, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -28,6 +29,7 @@ interface BudgetEditorHeaderProps {
   onToggleProfitability: () => void;
   onSave: (pendingHeaderUpdates?: Partial<HeaderDraftFields>) => void;
   onNavigateBack: () => void;
+  onExportExcel: (variant: ExcelExportVariant) => void;
 }
 
 export function BudgetEditorHeader({
@@ -39,6 +41,7 @@ export function BudgetEditorHeader({
   onToggleProfitability,
   onSave,
   onNavigateBack,
+  onExportExcel,
 }: BudgetEditorHeaderProps) {
   const [draft, setDraft] = useState(() => budgetToDraft(budget));
   const isEditingRef = useRef(false);
@@ -155,9 +158,19 @@ export function BudgetEditorHeader({
             </Button>
             <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
               <div className="p-1">
-                <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+                <button
+                  onClick={() => onExportExcel("internal")}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                >
                   <FileSpreadsheet size={16} className="text-gray-900" />
-                  Excel (.xlsx)
+                  Excel — Completa (interna)
+                </button>
+                <button
+                  onClick={() => onExportExcel("client")}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                >
+                  <FileSpreadsheet size={16} className="text-gray-900" />
+                  Excel — Cliente
                 </button>
                 <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
                   <FileText size={16} className="text-gray-900" />
