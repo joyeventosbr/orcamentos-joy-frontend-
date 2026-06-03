@@ -1,5 +1,6 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
 import { HONORARIUM_PERCENTAGE_OPTIONS, HonorariumPercentage } from "@/src/types";
+import { useEffect, useState } from "react";
 
 interface InternalServicesSummaryCardProps {
   servicesTotal: number;
@@ -51,6 +52,12 @@ export function InternalServicesSummaryCard({
   advancePayment,
   onHonorariumPercentageChange,
 }: InternalServicesSummaryCardProps) {
+  const [draftPercentage, setDraftPercentage] = useState(honorariumPercentage);
+
+  useEffect(() => {
+    setDraftPercentage(honorariumPercentage);
+  }, [honorariumPercentage]);
+
   return (
     <section className="border-b border-gray-100 px-7 py-6">
       <div className="divide-y divide-slate-100">
@@ -64,8 +71,14 @@ export function InternalServicesSummaryCard({
           <div className="flex items-center gap-2">
             <select
               className="h-8 rounded border border-slate-200 bg-white px-2 text-sm font-bold text-slate-700 outline-none focus:border-brand-primary"
-              value={honorariumPercentage}
-              onChange={(event) => onHonorariumPercentageChange(Number(event.target.value) as HonorariumPercentage)}
+              value={draftPercentage}
+              onChange={(event) => {
+                const next = Number(event.target.value) as HonorariumPercentage;
+                setDraftPercentage(next);
+                if (next !== honorariumPercentage) {
+                  onHonorariumPercentageChange(next);
+                }
+              }}
             >
               {HONORARIUM_PERCENTAGE_OPTIONS.map((option) => (
                 <option key={option} value={option}>

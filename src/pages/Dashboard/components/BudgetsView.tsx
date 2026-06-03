@@ -66,10 +66,19 @@ export function BudgetsView({ budgets, viewMode, onClearFilters }: BudgetsViewPr
                   <Calendar size={14} />
                   {format(new Date(getBudgetDisplayDate(budget)), "dd/MM/yyyy")}
                 </div>
-                {canViewEditHistory && budget.lastEditedBy && (
+                {canViewEditHistory && budget.createdBy && (
                   <div className="flex items-center gap-1.5 text-gray-400">
                     <UserRound size={13} />
-                    <span className="truncate">Última edição: {budget.lastEditedBy.name}</span>
+                    <span className="truncate">Criado por {budget.createdBy}</span>
+                  </div>
+                )}
+                {canViewEditHistory && budget.updatedBy && (
+                  <div className="flex items-center gap-1.5 text-gray-400">
+                    <UserRound size={13} />
+                    <span className="truncate">
+                      Editado por {budget.updatedBy} em{" "}
+                      {format(new Date(getBudgetDisplayDate(budget)), "dd/MM/yyyy")}
+                    </span>
                   </div>
                 )}
               </div>
@@ -113,10 +122,10 @@ export function BudgetsView({ budgets, viewMode, onClearFilters }: BudgetsViewPr
               </td>
               {canViewEditHistory && (
                 <td className="px-6 py-4 text-gray-500">
-                  {budget.lastEditedBy ? (
+                  {budget.updatedBy ? (
                     <div className="flex items-center gap-1.5">
                       <UserRound size={13} />
-                      <span>{budget.lastEditedBy.name}</span>
+                      <span>{budget.updatedBy}</span>
                     </div>
                   ) : (
                     <span className="text-gray-300">—</span>

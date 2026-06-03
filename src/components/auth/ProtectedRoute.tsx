@@ -1,3 +1,4 @@
+import { PageLoader } from '@/src/components/ui/PageLoader/PageLoader';
 import { useAuthStore, selectIsAuthenticated } from '@/src/store/auth.store';
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
@@ -13,7 +14,7 @@ export function ProtectedRoute() {
   }, []);
 
   if (!hydrated) {
-    return null;
+    return <PageLoader className="h-dvh" />;
   }
 
   if (!isAuthenticated) {

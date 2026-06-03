@@ -1,5 +1,6 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { selectIsAuthenticated, useAuthStore } from '@/src/store/auth.store';
 import { ApiBudget, Customer, Folder } from '@/src/types/api.types';
 import { customersKeys } from '@/src/api/customers/customers.keys';
 import { customersReq } from '@/src/api/customers/customers.req';
@@ -25,20 +26,24 @@ const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: customersKeys.queries.list,
     queryFn: customersReq.list,
+    enabled: isAuthenticated,
   });
 
   const { data: folders = [], isLoading: foldersLoading } = useQuery({
     queryKey: foldersKeys.queries.list,
     queryFn: foldersReq.list,
+    enabled: isAuthenticated,
   });
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: budgetsKeys.queries.list,
     queryFn: budgetsReq.list,
+    enabled: isAuthenticated,
   });
 
   const isLoading = customersLoading || foldersLoading || budgetsLoading;
@@ -73,26 +78,39 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.list }),
   });
 
-  const addCustomer = (name: string) =>
-    createCustomerMutation.mutateAsync({ name });
+  const addCustomer = useCallback(
+    (name: string) => createCustomerMutation.mutateAsync({ name }),
+    [createCustomerMutation.mutateAsync],
+  );
 
-  const deleteCustomer = (id: string) =>
-    deleteCustomerMutation.mutateAsync(id);
+  const deleteCustomer = useCallback(
+    (id: string) => deleteCustomerMutation.mutateAsync(id),
+    [deleteCustomerMutation.mutateAsync],
+  );
 
-  const addFolder = (customerId: string, name: string) =>
-    createFolderMutation.mutateAsync({ customerId, name });
+  const addFolder = useCallback(
+    (customerId: string, name: string) => createFolderMutation.mutateAsync({ customerId, name }),
+    [createFolderMutation.mutateAsync],
+  );
 
-  const deleteFolder = (id: string) =>
-    deleteFolderMutation.mutateAsync(id);
+  const deleteFolder = useCallback(
+    (id: string) => deleteFolderMutation.mutateAsync(id),
+    [deleteFolderMutation.mutateAsync],
+  );
 
-  const addBudget = (input: { folderId: string; customerId: string; name: string }) =>
-    createBudgetMutation.mutateAsync(input);
+  const addBudget = useCallback(
+    (input: { folderId: string; customerId: string; name: string }) =>
+      createBudgetMutation.mutateAsync(input),
+    [createBudgetMutation.mutateAsync],
+  );
 
-  const deleteBudget = (id: string) =>
-    deleteBudgetMutation.mutateAsync(id);
+  const deleteBudget = useCallback(
+    (id: string) => deleteBudgetMutation.mutateAsync(id),
+    [deleteBudgetMutation.mutateAsync],
+  );
 
-  return (
-    <AppDataContext.Provider value={{
+  const value = useMemo<AppDataContextType>(
+    () => ({
       customers,
       folders,
       budgets,
@@ -103,10 +121,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       deleteFolder,
       addBudget,
       deleteBudget,
-    }}>
-      {children}
-    </AppDataContext.Provider>
+    }),
+    [
+      customers, folders, budgets, isLoading,
+      addCustomer, deleteCustomer,
+      addFolder, deleteFolder,
+      addBudget, deleteBudget,
+    ],
   );
+
+  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
 
 export function useAppData() {

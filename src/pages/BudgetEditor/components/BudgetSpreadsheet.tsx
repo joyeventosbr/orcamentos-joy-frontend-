@@ -1,5 +1,5 @@
+import { ProfitabilityCategory } from "@/src/hooks/useProfitabilitySummary";
 import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
-import { ProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { ChevronDown } from "lucide-react";
 import React, { useMemo } from "react";
 import { BudgetCategorySection } from "./BudgetCategorySection";
@@ -13,7 +13,7 @@ interface BudgetSpreadsheetProps {
   expandedCategories: Record<string, boolean>;
   missingCategories: BudgetCategory[];
   editingCell: { id: string; field: keyof BudgetItem } | null;
-  profitabilitySummary: ProfitabilitySummary;
+  profitabilityCategoryMap: Map<string, ProfitabilityCategory>;
   isLocked?: boolean;
   onToggleCategory: (categoryId: string) => void;
   onAddRow: (categoryId: string) => void;
@@ -24,6 +24,49 @@ interface BudgetSpreadsheetProps {
   onUpdate: TBudgetItemUpdater;
 }
 
+function groupedItemsEqual(
+  prev: Record<string, BudgetItem[]>,
+  next: Record<string, BudgetItem[]>,
+): boolean {
+  const prevKeys = Object.keys(prev);
+  const nextKeys = Object.keys(next);
+  if (prevKeys.length !== nextKeys.length) return false;
+  return prevKeys.every((key) => prev[key] === next[key]);
+}
+
+function expandedCategoriesEqual(
+  prev: Record<string, boolean>,
+  next: Record<string, boolean>,
+): boolean {
+  const keys = new Set([...Object.keys(prev), ...Object.keys(next)]);
+  for (const key of keys) {
+    if ((prev[key] ?? true) !== (next[key] ?? true)) return false;
+  }
+  return true;
+}
+
+function areBudgetSpreadsheetPropsEqual(
+  prev: BudgetSpreadsheetProps,
+  next: BudgetSpreadsheetProps,
+): boolean {
+  if (prev.primaryCategories !== next.primaryCategories) return false;
+  if (prev.internalServiceCategories !== next.internalServiceCategories) return false;
+  if (!groupedItemsEqual(prev.groupedItems, next.groupedItems)) return false;
+  if (!expandedCategoriesEqual(prev.expandedCategories, next.expandedCategories)) return false;
+  if (prev.missingCategories !== next.missingCategories) return false;
+  if (prev.editingCell !== next.editingCell) return false;
+  if (prev.isLocked !== next.isLocked) return false;
+  if (prev.onToggleCategory !== next.onToggleCategory) return false;
+  if (prev.onAddRow !== next.onAddRow) return false;
+  if (prev.onDeleteCategory !== next.onDeleteCategory) return false;
+  if (prev.onDeleteRow !== next.onDeleteRow) return false;
+  if (prev.onCellClick !== next.onCellClick) return false;
+  if (prev.onCellBlur !== next.onCellBlur) return false;
+  if (prev.onUpdate !== next.onUpdate) return false;
+  if (prev.profitabilityCategoryMap !== next.profitabilityCategoryMap) return false;
+  return true;
+}
+
 export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
   primaryCategories,
   internalServiceCategories,
@@ -31,7 +74,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
   expandedCategories,
   missingCategories,
   editingCell,
-  profitabilitySummary,
+  profitabilityCategoryMap,
   isLocked = false,
   onToggleCategory,
   onAddRow,
@@ -52,11 +95,6 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
     onCellBlur,
     onUpdate: isLocked ? noop : onUpdate,
   }), [isLocked, editingCell, onToggleCategory, onAddRow, onDeleteCategory, onDeleteRow, onCellClick, onCellBlur, onUpdate]);
-
-  const primaryCategoryProfMap = useMemo(() => {
-    const map = new Map(profitabilitySummary?.categories.map((c) => [c.categoryId, c]));
-    return map;
-  }, [profitabilitySummary?.categories]);
 
   return (
     <div className="flex-1 min-h-0 p-6 overflow-y-auto">
@@ -127,7 +165,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                   items={items}
                   isExpanded={expandedCategories[category.id] ?? true}
                   allowInternalStyle
-                  categoryProfitability={primaryCategoryProfMap.get(category.id)}
+                  categoryProfitability={profitabilityCategoryMap.get(category.id)}
                   {...sectionProps}
                 />
               );
@@ -203,7 +241,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                   items={items}
                   isExpanded={expandedCategories[category.id] ?? true}
                   allowInternalStyle={false}
-                  categoryProfitability={primaryCategoryProfMap.get(category.id)}
+                  categoryProfitability={profitabilityCategoryMap.get(category.id)}
                   {...sectionProps}
                 />
               );
@@ -244,4 +282,4 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
       )}
     </div>
   );
-});
+}, areBudgetSpreadsheetPropsEqual);

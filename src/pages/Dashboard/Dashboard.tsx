@@ -83,14 +83,7 @@ export function Dashboard() {
     level === "customers" ? "Novo Cliente" : level === "folders" ? "Nova Pasta" : "Novo Orçamento";
 
   if (isLoading) {
-    return (
-      <div className="flex h-full flex-1 items-center justify-center bg-gray-50/50">
-        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-5 text-center shadow-sm">
-          <div className="text-sm font-bold uppercase tracking-widest text-slate-400">Carregando</div>
-          <div className="mt-2 text-sm text-slate-500">Buscando dados da API...</div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const modalConfig = getModalConfig();

@@ -1,33 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CreateCustomerRequest } from '@/src/types/api.types';
+import { createCrudCallers } from '@/src/api/createCrudCallers';
+import { CreateCustomerRequest, Customer } from '@/src/types/api.types';
 import { customersKeys } from './customers.keys';
 import { customersReq } from './customers.req';
 
-export function useCustomersQuery() {
-  return useQuery({
-    queryKey: customersKeys.queries.list,
-    queryFn: customersReq.list,
-  });
-}
+const callers = createCrudCallers<Customer, CreateCustomerRequest>(customersKeys, customersReq);
 
-export function useCreateCustomerMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationKey: customersKeys.mutations.create,
-    mutationFn: (body: CreateCustomerRequest) => customersReq.create(body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customersKeys.queries.list });
-    },
-  });
-}
-
-export function useDeleteCustomerMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationKey: customersKeys.mutations.delete,
-    mutationFn: (id: string) => customersReq.remove(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customersKeys.queries.list });
-    },
-  });
-}
+export const useCustomersQuery = callers.useListQuery;
+export const useCreateCustomerMutation = callers.useCreateMutation;
+export const useDeleteCustomerMutation = callers.useDeleteMutation;

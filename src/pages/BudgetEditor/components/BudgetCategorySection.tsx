@@ -7,6 +7,137 @@ import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import React, { memo } from "react";
 import { BudgetTableCell } from "./BudgetTableCell";
 
+type BudgetItemRowCellProps = {
+  editingCell: { id: string; field: keyof BudgetItem } | null;
+  onCellClick: (id: string, field: keyof BudgetItem) => void;
+  onCellBlur: () => void;
+  onUpdate: TBudgetItemUpdater;
+};
+
+interface BudgetItemRowProps extends BudgetItemRowCellProps {
+  item: BudgetItem;
+  isLast: boolean;
+  isLocked: boolean;
+  onDeleteRow: (id: string) => void;
+}
+
+const BudgetItemRow = memo(
+  function BudgetItemRow({
+    item,
+    isLast,
+    isLocked,
+    editingCell,
+    onCellClick,
+    onCellBlur,
+    onUpdate,
+    onDeleteRow,
+  }: BudgetItemRowProps) {
+    const profitabilityMetrics = mapBudgetItemToProfitabilityMetrics(item);
+    const cellProps = { editingCell, onCellClick, onCellBlur, onUpdate };
+
+    return (
+      <tr
+        className={`group hover:bg-gray-50 transition-colors divide-x divide-slate-100 ${!isLast ? "border-b border-slate-100" : ""}`}
+      >
+        <td className="align-middle px-3 py-1 bg-slate-50 group-hover:bg-slate-100 text-slate-500 font-medium whitespace-nowrap">
+          {item.itemNumber}
+        </td>
+        <td className="align-top p-0 bg-white group-hover:bg-gray-50 w-[200px] min-w-[200px]">
+          <BudgetTableCell {...cellProps} item={item} field="name" type="text" />
+        </td>
+        <td className="align-top p-0 min-w-[300px]">
+          <BudgetTableCell {...cellProps} item={item} field="description" type="textarea" />
+        </td>
+        <td className="align-top p-0 w-[150px] min-w-[150px]">
+          <BudgetTableCell {...cellProps} item={item} field="billingType" type="text" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="quantity" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="days" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="unitPrice" type="number" align="right" />
+        </td>
+        <td className="align-middle px-3 py-2 text-right font-semibold text-gray-900 bg-slate-50/50 relative">
+          {formatCurrencyBRL(item.total)}
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="paymentAdvance" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="payment30d" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="payment45d" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="payment60d" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="payment90d" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="payment120d" type="number" align="right" />
+        </td>
+        <td className="align-top p-0 border-l-2 border-gray-200">
+          <BudgetTableCell {...cellProps} item={item} field="fornecedorName" type="text" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="fornecedorValue" type="number" align="right" />
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="percentBV" type="number" align="right" />
+        </td>
+        <td className="align-middle px-3 py-2 text-right text-slate-400 bg-slate-50/50">
+          {`${profitabilityMetrics.percentNfBV || 0}%`}
+        </td>
+        <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
+          {formatCurrencyBRL(profitabilityMetrics.rsBV)}
+        </td>
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="percentNfOver" type="number" align="right" />
+        </td>
+        <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
+          {formatCurrencyBRL(profitabilityMetrics.over)}
+        </td>
+        <td className="align-middle px-3 py-2 text-right font-semibold text-slate-900 bg-gray-100/50">
+          {formatCurrencyBRL(profitabilityMetrics.valorReal)}
+        </td>
+        <td className="align-middle text-center p-0 border-l-2 border-slate-100">
+          {!isLocked && (
+            <button
+              onClick={() => onDeleteRow(item.id)}
+              className="w-full h-full min-h-[36px] flex items-center justify-center text-slate-300 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              title="Excluir Item"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+        </td>
+      </tr>
+    );
+  },
+  (prev, next) => {
+    if (prev.item !== next.item) return false;
+    if (prev.isLast !== next.isLast) return false;
+    if (prev.isLocked !== next.isLocked) return false;
+    if (prev.onDeleteRow !== next.onDeleteRow) return false;
+    if (prev.onUpdate !== next.onUpdate) return false;
+    if (prev.onCellClick !== next.onCellClick) return false;
+    if (prev.onCellBlur !== next.onCellBlur) return false;
+
+    const prevRowEditing = prev.editingCell?.id === prev.item.id;
+    const nextRowEditing = next.editingCell?.id === next.item.id;
+    if (prevRowEditing || nextRowEditing) {
+      return prev.editingCell === next.editingCell;
+    }
+
+    return true;
+  },
+);
+
 interface BudgetCategorySectionProps {
   key?: React.Key;
   category: BudgetCategory;
@@ -44,8 +175,6 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
   const isInternalServicesCategory = allowInternalStyle && category.id === "2.1";
   const categoryTotal = items.reduce((sum, item) => sum + item.total, 0);
   const paymentTotals = calculatePaymentScheduleTotals(items);
-
-  const cellProps = { editingCell, onCellClick, onCellBlur, onUpdate };
 
   return (
     <React.Fragment>
@@ -119,96 +248,19 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
 
       {/* Item Rows */}
       {isExpanded &&
-        items.map((item, index) => {
-          const profitabilityMetrics = mapBudgetItemToProfitabilityMetrics(item);
-          return (
-          <tr
+        items.map((item, index) => (
+          <BudgetItemRow
             key={item.id}
-            className={`group hover:bg-gray-50 transition-colors divide-x divide-slate-100 ${index !== items.length - 1 ? "border-b border-slate-100" : ""}`}
-          >
-            <td className="align-middle px-3 py-1 bg-slate-50 group-hover:bg-slate-100 text-slate-500 font-medium whitespace-nowrap">
-              {item.itemNumber}
-            </td>
-            <td className="align-top p-0 bg-white group-hover:bg-gray-50 w-[200px] min-w-[200px]">
-              <BudgetTableCell {...cellProps} item={item} field="name" type="text" />
-            </td>
-            <td className="align-top p-0 min-w-[300px]">
-              <BudgetTableCell {...cellProps} item={item} field="description" type="textarea" />
-            </td>
-            <td className="align-top p-0 w-[150px] min-w-[150px]">
-              <BudgetTableCell {...cellProps} item={item} field="billingType" type="text" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="quantity" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="days" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="unitPrice" type="number" align="right" />
-            </td>
-            <td className="align-middle px-3 py-2 text-right font-semibold text-gray-900 bg-slate-50/50 relative">
-              {formatCurrencyBRL(item.total)}
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="paymentAdvance" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="payment30d" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="payment45d" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="payment60d" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="payment90d" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="payment120d" type="number" align="right" />
-            </td>
-            
-            {/* Rentabilidade Columns */}
-            <td className="align-top p-0 border-l-2 border-gray-200">
-              <BudgetTableCell {...cellProps} item={item} field="fornecedorName" type="text" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="fornecedorValue" type="number" align="right" />
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="percentBV" type="number" align="right" />
-            </td>
-            <td className="align-middle px-3 py-2 text-right text-slate-400 bg-slate-50/50">
-              {`${profitabilityMetrics.percentNfBV || 0}%`}
-            </td>
-            <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
-              {formatCurrencyBRL(profitabilityMetrics.rsBV)}
-            </td>
-            <td className="align-top p-0">
-              <BudgetTableCell {...cellProps} item={item} field="percentNfOver" type="number" align="right" />
-            </td>
-            <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
-              {formatCurrencyBRL(profitabilityMetrics.over)}
-            </td>
-            <td className="align-middle px-3 py-2 text-right font-semibold text-slate-900 bg-gray-100/50">
-              {formatCurrencyBRL(profitabilityMetrics.valorReal)}
-            </td>
-
-            <td className="align-middle text-center p-0 border-l-2 border-slate-100">
-              {!isLocked && (
-                <button
-                  onClick={() => onDeleteRow(item.id)}
-                  className="w-full h-full min-h-[36px] flex items-center justify-center text-slate-300 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-                  title="Excluir Item"
-                >
-                  <Trash2 size={15} />
-                </button>
-              )}
-            </td>
-          </tr>
-          );
-        })}
+            item={item}
+            isLast={index === items.length - 1}
+            isLocked={isLocked}
+            editingCell={editingCell}
+            onCellClick={onCellClick}
+            onCellBlur={onCellBlur}
+            onUpdate={onUpdate}
+            onDeleteRow={onDeleteRow}
+          />
+        ))}
 
       {/* Payment Schedule Category Total Row */}
       <tr className="border-t border-gray-200 bg-gray-100 text-gray-900">
@@ -240,4 +292,26 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
       </tr>
     </React.Fragment>
   );
+}, (prev, next) => {
+  if (prev.category !== next.category) return false;
+  if (prev.items !== next.items) return false;
+  if (prev.isExpanded !== next.isExpanded) return false;
+  if (prev.allowInternalStyle !== next.allowInternalStyle) return false;
+  if (prev.isLocked !== next.isLocked) return false;
+  if (prev.categoryProfitability !== next.categoryProfitability) return false;
+  if (prev.onToggle !== next.onToggle) return false;
+  if (prev.onAddRow !== next.onAddRow) return false;
+  if (prev.onDeleteCategory !== next.onDeleteCategory) return false;
+  if (prev.onDeleteRow !== next.onDeleteRow) return false;
+  if (prev.onUpdate !== next.onUpdate) return false;
+  if (prev.onCellClick !== next.onCellClick) return false;
+  if (prev.onCellBlur !== next.onCellBlur) return false;
+
+  const prevHasEditing = prev.items.some((item) => item.id === prev.editingCell?.id);
+  const nextHasEditing = next.items.some((item) => item.id === next.editingCell?.id);
+  if (prevHasEditing || nextHasEditing) {
+    return prev.editingCell === next.editingCell;
+  }
+
+  return true;
 });

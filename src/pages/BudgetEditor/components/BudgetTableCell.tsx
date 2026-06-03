@@ -16,6 +16,95 @@ function parseDraftNumber(raw: string): number {
 
 const DRAFT_NUMBER_PATTERN = /^-?\d*[.,]?\d*$/;
 
+function EditableTextInput({
+  value,
+  align,
+  onCommit,
+  onBlur,
+}: {
+  value: string;
+  align: "left" | "right";
+  onCommit: (value: string) => void;
+  onBlur: () => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  }, []);
+
+  const commit = () => {
+    if (draft !== value) onCommit(draft);
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      className={`w-full h-8 bg-white border-2 border-gray-300 outline-none px-2 py-1 text-sm rounded shadow-sm text-${align}`}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        commit();
+        onBlur();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          commit();
+          onBlur();
+        }
+      }}
+    />
+  );
+}
+
+function EditableTextarea({
+  value,
+  align,
+  onCommit,
+  onBlur,
+}: {
+  value: string;
+  align: "left" | "right";
+  onCommit: (value: string) => void;
+  onBlur: () => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  const commit = () => {
+    if (draft !== value) onCommit(draft);
+  };
+
+  return (
+    <textarea
+      ref={textareaRef}
+      className={`w-full bg-white border-2 border-gray-300 outline-none px-2 py-1 text-sm rounded shadow-sm text-${align} resize-y min-h-[60px]`}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        commit();
+        onBlur();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          commit();
+          onBlur();
+        }
+      }}
+    />
+  );
+}
+
 function EditableNumberInput({
   value,
   align,
@@ -37,7 +126,10 @@ function EditableNumberInput({
     el.select();
   }, []);
 
-  const commit = () => onCommit(parseDraftNumber(draft));
+  const commit = () => {
+    const parsed = parseDraftNumber(draft);
+    if (parsed !== value) onCommit(parsed);
+  };
 
   return (
     <input
@@ -90,6 +182,71 @@ const CURRENCY_FIELDS = [
 ];
 const PERCENT_FIELDS = ["percentBV", "percentNfOver"];
 
+function areBudgetTableCellPropsEqual(prev: BudgetTableCellProps, next: BudgetTableCellProps): boolean {
+  if (prev.item !== next.item) return false;
+  if (prev.field !== next.field) return false;
+  if (prev.type !== next.type) return false;
+  if (prev.align !== next.align) return false;
+  if (prev.onUpdate !== next.onUpdate) return false;
+  if (prev.onCellClick !== next.onCellClick) return false;
+  if (prev.onCellBlur !== next.onCellBlur) return false;
+
+  const prevIsEditing = prev.editingCell?.id === prev.item.id && prev.editingCell?.field === prev.field;
+  const nextIsEditing = next.editingCell?.id === next.item.id && next.editingCell?.field === next.field;
+
+  return prevIsEditing === nextIsEditing;
+}
+
+function BillingTypeSelect({
+  item,
+  hasMissingBillingType,
+  onUpdate,
+}: {
+  item: BudgetItem;
+  hasMissingBillingType: boolean;
+  onUpdate: TBudgetItemUpdater;
+}) {
+  const [draft, setDraft] = useState(item.billingType);
+
+  useEffect(() => {
+    setDraft(item.billingType);
+  }, [item.billingType]);
+
+  const commit = (next: string) => {
+    setDraft(next);
+    if (next !== item.billingType) {
+      onUpdate(item.id, "billingType", next);
+    }
+  };
+
+  return (
+    <div className="h-full w-full px-1 py-1">
+      <select
+        className={`h-8 w-full rounded border px-2 py-1 text-sm font-medium outline-none transition-all focus:bg-white ${
+          hasMissingBillingType
+            ? "border-red-300 bg-amber-50 text-red-900 focus:border-red-400"
+            : "border-transparent bg-transparent text-slate-700 hover:bg-gray-100 focus:border-gray-300"
+        }`}
+        value={draft}
+        onChange={(e) => commit(e.target.value)}
+        title={hasMissingBillingType ? "Selecione o Tipo Faturamento — valor unitário preenchido sem tipo." : undefined}
+      >
+        <option value="">{hasMissingBillingType ? "⚠ Pendente" : "Selecionar"}</option>
+        {BILLING_TYPE_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      {hasMissingBillingType && (
+        <div className="px-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-red-600 text-center">
+          Obrigatório
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const BudgetTableCell = memo(function BudgetTableCell({
   item,
   field,
@@ -103,34 +260,7 @@ export const BudgetTableCell = memo(function BudgetTableCell({
   if (field === "billingType") {
     const hasMissingBillingType = !item.billingType && (item.unitPrice > 0 || item.total > 0);
 
-    return (
-      <div className="h-full w-full px-1 py-1">
-        <select
-          className={`h-8 w-full rounded border px-2 py-1 text-sm font-medium outline-none transition-all focus:bg-white ${
-            hasMissingBillingType
-              ? "border-red-300 bg-amber-50 text-red-900 focus:border-red-400"
-              : "border-transparent bg-transparent text-slate-700 hover:bg-gray-100 focus:border-gray-300"
-          }`}
-          value={item.billingType}
-          onChange={(e) => onUpdate(item.id, "billingType", e.target.value)}
-          title={
-            hasMissingBillingType ? "Selecione o Tipo Faturamento — valor unitário preenchido sem tipo." : undefined
-          }
-        >
-          <option value="">{hasMissingBillingType ? "⚠ Pendente" : "Selecionar"}</option>
-          {BILLING_TYPE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        {hasMissingBillingType && (
-          <div className="px-1 pt-1 text-[10px] font-bold uppercase tracking-wide text-red-600 text-center">
-            Obrigatório
-          </div>
-        )}
-      </div>
-    );
+    return <BillingTypeSelect item={item} hasMissingBillingType={hasMissingBillingType} onUpdate={onUpdate} />;
   }
 
   const isEditing = editingCell?.id === item.id && editingCell?.field === field;
@@ -139,18 +269,11 @@ export const BudgetTableCell = memo(function BudgetTableCell({
     if (type === "textarea") {
       return (
         <div className="h-full w-full px-1 py-1">
-          <textarea
-            autoFocus
-            className={`w-full bg-white border-2 border-gray-300 outline-none px-2 py-1 text-sm rounded shadow-sm text-${align} resize-y min-h-[60px]`}
-            value={item[field] as string}
-            onChange={(e) => onUpdate(item.id, field, e.target.value)}
+          <EditableTextarea
+            value={(item[field] as string) ?? ""}
+            align={align}
+            onCommit={(val) => onUpdate(item.id, field, val)}
             onBlur={onCellBlur}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                onCellBlur();
-              }
-            }}
           />
         </div>
       );
@@ -171,16 +294,11 @@ export const BudgetTableCell = memo(function BudgetTableCell({
 
     return (
       <div className="h-full w-full px-1 py-1">
-        <input
-          autoFocus
-          type="text"
-          className={`w-full h-8 bg-white border-2 border-gray-300 outline-none px-2 py-1 text-sm rounded shadow-sm text-${align}`}
-          value={item[field] as string}
-          onChange={(e) => onUpdate(item.id, field, e.target.value)}
+        <EditableTextInput
+          value={(item[field] as string) ?? ""}
+          align={align}
+          onCommit={(val) => onUpdate(item.id, field, val)}
           onBlur={onCellBlur}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onCellBlur();
-          }}
         />
       </div>
     );
@@ -205,4 +323,4 @@ export const BudgetTableCell = memo(function BudgetTableCell({
       </span>
     </div>
   );
-});
+}, areBudgetTableCellPropsEqual);

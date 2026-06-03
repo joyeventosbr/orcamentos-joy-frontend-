@@ -3,7 +3,21 @@ import { Button } from "@/src/components/ui/Button/Button";
 import { getBudgetDisplayStatus, getStatusBadgeVariant } from "@/src/lib/budgetStatus";
 import { Budget } from "@/src/types";
 import { ArrowLeft, Download, FileSpreadsheet, FileText, LayoutTemplate, Lock, Save, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { BudgetStatusSelect } from "./BudgetStatusSelect";
+
+type HeaderDraftFields = Pick<Budget, "name" | "client" | "job" | "location" | "date" | "participants">;
+
+function budgetToDraft(budget: Budget): HeaderDraftFields {
+  return {
+    name: budget.name,
+    client: budget.client ?? "",
+    job: budget.job ?? "",
+    location: budget.location ?? "",
+    date: budget.date ?? "",
+    participants: budget.participants ?? "",
+  };
+}
 
 interface BudgetEditorHeaderProps {
   budget: Budget;
@@ -12,7 +26,7 @@ interface BudgetEditorHeaderProps {
   onBudgetChange: (updates: Partial<Budget>) => void;
   onToggleSidebar: () => void;
   onToggleProfitability: () => void;
-  onSave: () => void;
+  onSave: (pendingHeaderUpdates?: Partial<HeaderDraftFields>) => void;
   onNavigateBack: () => void;
 }
 
@@ -26,11 +40,47 @@ export function BudgetEditorHeader({
   onSave,
   onNavigateBack,
 }: BudgetEditorHeaderProps) {
+  const [draft, setDraft] = useState(() => budgetToDraft(budget));
+  const isEditingRef = useRef(false);
+
+  useEffect(() => {
+    if (isEditingRef.current) return;
+    setDraft(budgetToDraft(budget));
+  }, [budget]);
+
+  const collectPendingUpdates = (): Partial<HeaderDraftFields> => {
+    const updates: Partial<HeaderDraftFields> = {};
+    (Object.keys(draft) as (keyof HeaderDraftFields)[]).forEach((field) => {
+      const next = draft[field] ?? "";
+      const current = budget[field] ?? "";
+      if (next !== current) updates[field] = next;
+    });
+    return updates;
+  };
+
+  const syncFieldOnBlur = (field: keyof HeaderDraftFields) => {
+    isEditingRef.current = false;
+    const next = draft[field] ?? "";
+    const current = budget[field] ?? "";
+    if (next !== current) {
+      onBudgetChange({ [field]: next });
+    }
+  };
+
+  const handleSave = () => {
+    isEditingRef.current = false;
+    const updates = collectPendingUpdates();
+    if (Object.keys(updates).length > 0) {
+      onBudgetChange(updates);
+    }
+    onSave(updates);
+  };
+
   const displayStatus = getBudgetDisplayStatus(budget);
   const phaseLabel = budget.phase === "concorrencia" ? "Concorrência" : "Produção";
 
-  const isClientEmpty = !isLocked && !budget.client?.trim();
-  const isJobEmpty = !isLocked && !budget.job?.trim();
+  const isClientEmpty = !isLocked && !draft.client.trim();
+  const isJobEmpty = !isLocked && !draft.job.trim();
   const isDeadlineEmpty = !isLocked && !budget.deadline;
 
   return (
@@ -47,8 +97,12 @@ export function BudgetEditorHeader({
             <div className="flex items-center gap-3">
               <input
                 type="text"
-                value={budget.name}
-                onChange={(e) => onBudgetChange({ name: e.target.value })}
+                value={draft.name}
+                onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
+                onFocus={() => {
+                  isEditingRef.current = true;
+                }}
+                onBlur={() => syncFieldOnBlur("name")}
                 disabled={isLocked}
                 className={`text-lg font-semibold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-brand-primary rounded px-1 -ml-1 transition-all w-80 ${
                   isLocked ? "cursor-default opacity-75" : "hover:bg-gray-50"
@@ -113,7 +167,7 @@ export function BudgetEditorHeader({
             </div>
           </div>
           {!isLocked && (
-            <Button onClick={onSave} className="gap-2 bg-black hover:bg-gray-800 text-white border-black">
+            <Button onClick={handleSave} className="gap-2 bg-black hover:bg-gray-800 text-white border-black">
               <Save size={16} />
               Salvar
             </Button>
@@ -131,8 +185,12 @@ export function BudgetEditorHeader({
           </span>
           <input
             type="text"
-            value={budget.client || ""}
-            onChange={(e) => onBudgetChange({ client: e.target.value })}
+            value={draft.client}
+            onChange={(e) => setDraft((prev) => ({ ...prev, client: e.target.value }))}
+            onFocus={() => {
+              isEditingRef.current = true;
+            }}
+            onBlur={() => syncFieldOnBlur("client")}
             disabled={isLocked}
             title={isClientEmpty ? "Campo obrigatório" : undefined}
             className={`text-sm font-medium border-none outline-none rounded px-2 py-1 w-40 transition-all ${
@@ -154,8 +212,12 @@ export function BudgetEditorHeader({
           </span>
           <input
             type="text"
-            value={budget.job || ""}
-            onChange={(e) => onBudgetChange({ job: e.target.value })}
+            value={draft.job}
+            onChange={(e) => setDraft((prev) => ({ ...prev, job: e.target.value }))}
+            onFocus={() => {
+              isEditingRef.current = true;
+            }}
+            onBlur={() => syncFieldOnBlur("job")}
             disabled={isLocked}
             title={isJobEmpty ? "Campo obrigatório" : undefined}
             className={`text-sm font-medium border-none outline-none rounded px-2 py-1 w-48 transition-all ${
@@ -201,8 +263,12 @@ export function BudgetEditorHeader({
           <span className="text-sm font-semibold text-slate-800 whitespace-nowrap">Local:</span>
           <input
             type="text"
-            value={budget.location || ""}
-            onChange={(e) => onBudgetChange({ location: e.target.value })}
+            value={draft.location}
+            onChange={(e) => setDraft((prev) => ({ ...prev, location: e.target.value }))}
+            onFocus={() => {
+              isEditingRef.current = true;
+            }}
+            onBlur={() => syncFieldOnBlur("location")}
             disabled={isLocked}
             className={`text-sm font-medium text-slate-600 border-none outline-none focus:ring-1 focus:ring-brand-primary/30 placeholder-slate-300 rounded px-2 py-1 w-40 transition-colors ${
               isLocked ? "cursor-default bg-transparent" : "hover:bg-slate-50"
@@ -215,8 +281,12 @@ export function BudgetEditorHeader({
           <span className="text-sm font-semibold text-slate-800 whitespace-nowrap">Data:</span>
           <input
             type="text"
-            value={budget.date || ""}
-            onChange={(e) => onBudgetChange({ date: e.target.value })}
+            value={draft.date}
+            onChange={(e) => setDraft((prev) => ({ ...prev, date: e.target.value }))}
+            onFocus={() => {
+              isEditingRef.current = true;
+            }}
+            onBlur={() => syncFieldOnBlur("date")}
             disabled={isLocked}
             className={`text-sm font-medium text-slate-600 border-none outline-none focus:ring-1 focus:ring-brand-primary/30 placeholder-slate-300 rounded px-2 py-1 w-32 transition-colors ${
               isLocked ? "cursor-default bg-transparent" : "hover:bg-slate-50"
@@ -229,8 +299,12 @@ export function BudgetEditorHeader({
           <span className="text-sm font-semibold text-slate-800 whitespace-nowrap">N Part.:</span>
           <input
             type="text"
-            value={budget.participants || ""}
-            onChange={(e) => onBudgetChange({ participants: e.target.value })}
+            value={draft.participants}
+            onChange={(e) => setDraft((prev) => ({ ...prev, participants: e.target.value }))}
+            onFocus={() => {
+              isEditingRef.current = true;
+            }}
+            onBlur={() => syncFieldOnBlur("participants")}
             disabled={isLocked}
             className={`text-sm font-medium text-slate-600 border-none outline-none focus:ring-1 focus:ring-brand-primary/30 placeholder-slate-300 rounded px-2 py-1 w-24 transition-colors ${
               isLocked ? "cursor-default bg-transparent" : "hover:bg-slate-50"

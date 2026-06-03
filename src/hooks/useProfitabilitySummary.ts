@@ -1,4 +1,4 @@
-import { BUDGET_CATEGORIES, BudgetItem } from "@/src/types";
+import { BudgetCategory, BudgetItem } from "@/src/types";
 import {
   calculateProfitabilityItem,
   calculateProfitabilityResult,
@@ -64,6 +64,7 @@ function sumTotals(items: ProfitabilityRow[]): ProfitabilityTotals {
 
 export interface UseProfitabilitySummaryInput {
   primaryItems: BudgetItem[];
+  categories: BudgetCategory[];
   internalItemsTotal: number;
   honorariumPercentage: number;
   prazoDias: number;
@@ -73,6 +74,7 @@ export interface UseProfitabilitySummaryInput {
 
 export function useProfitabilitySummary({
   primaryItems,
+  categories,
   internalItemsTotal,
   honorariumPercentage,
   prazoDias,
@@ -98,7 +100,7 @@ export function useProfitabilitySummary({
       };
     });
 
-    const categories: ProfitabilityCategory[] = BUDGET_CATEGORIES.filter((cat) => !cat.id.startsWith("2."))
+    const profitabilityCategories: ProfitabilityCategory[] = categories
       .map((cat) => {
         const catRows = allRows.filter((r) => r.categoryId === cat.id);
         return {
@@ -128,9 +130,9 @@ export function useProfitabilitySummary({
 
     return {
       ...result,
-      categories,
+      categories: profitabilityCategories,
       grandTotals,
       totalsViaJoy,
     };
-  }, [primaryItems, internalItemsTotal, honorariumPercentage, prazoDias, antecipadoCliente, rates]);
+  }, [primaryItems, categories, internalItemsTotal, honorariumPercentage, prazoDias, antecipadoCliente, rates]);
 }

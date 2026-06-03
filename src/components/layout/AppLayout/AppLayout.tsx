@@ -1,10 +1,12 @@
 import joyLogo from "@/src/assets/joy-logo.png";
+import { PageLoader } from "@/src/components/ui/PageLoader/PageLoader";
+import { useAppData } from "@/src/context/AppDataContext";
 import { useAuth } from "@/src/hooks/use-auth";
 import { usePermissions } from "@/src/hooks/use-permissions";
 import { cn } from "@/src/lib/utils";
 import { ChevronLeft, ChevronRight, LayoutDashboard, LogOut, Settings, Shield, Users } from "lucide-react";
-import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Suspense, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 interface NavItem {
   icon: React.ElementType;
@@ -42,9 +44,12 @@ function NavItemLink({ item, isCollapsed }: { item: NavItem; isCollapsed: boolea
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { currentUser, logout } = useAuth();
   const { isAdmin } = usePermissions();
+  const { isLoading: isAppDataLoading } = useAppData();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const isDashboard = pathname === "/";
 
   const handleLogout = async () => {
     await logout();
@@ -122,8 +127,13 @@ export function AppLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Outlet />
+      <main className="relative flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
+        {isDashboard && isAppDataLoading && (
+          <PageLoader className="absolute inset-0 z-10 bg-gray-50/50" />
+        )}
       </main>
     </div>
   );

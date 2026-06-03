@@ -65,11 +65,6 @@ export interface BudgetItem {
   percentNfOver: number;
 }
 
-export interface BudgetEditor {
-  name: string;
-  email: string;
-}
-
 export interface Budget {
   id: string;
   jobId: string;
@@ -80,7 +75,10 @@ export interface Budget {
   sourceBudgetId?: string;
   totalValue: number;
   lastUpdated: string;
-  lastEditedBy?: BudgetEditor;
+  /** Nome do criador (ADMIN only na API) */
+  createdBy?: string;
+  /** Nome do último editor; null se ainda não editado (ADMIN only na API) */
+  updatedBy?: string | null;
   items: BudgetItem[];
   client?: string;
   job?: string;

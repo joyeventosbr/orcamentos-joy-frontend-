@@ -1,14 +1,14 @@
+import { PageLoader } from "@/src/components/ui/PageLoader/PageLoader";
 import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
 import { Budget, BudgetItem } from "@/src/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
+import { BudgetEditorSidebars } from "./BudgetEditorSidebars";
+import { BudgetEditorSpreadsheetArea } from "./BudgetEditorSpreadsheetArea";
 import { ApprovalConfirmModal } from "./components/ApprovalConfirmModal";
 import { BudgetEditorHeader } from "./components/BudgetEditorHeader";
-import { BudgetSpreadsheet } from "./components/BudgetSpreadsheet";
-import { BudgetSummaryPanel } from "./components/BudgetSummaryPanel";
 import { DeleteCategoryModal } from "./components/DeleteCategoryModal";
-import { ProfitabilitySidebar } from "./components/ProfitabilitySidebar";
 
 export function BudgetEditor() {
   const navigate = useNavigate();
@@ -110,6 +110,80 @@ export function BudgetEditor() {
     [editor.isLocked, editor.runValidation, editor.updateBudgetFields],
   );
 
+  const toggleSummarySidebar = useCallback(() => {
+    setActiveSidebar((current) => (current === "summary" ? null : "summary"));
+  }, []);
+
+  const toggleProfitabilitySidebar = useCallback(() => {
+    setActiveSidebar((current) => (current === "profitability" ? null : "profitability"));
+  }, []);
+
+  const spreadsheetProps = useMemo(
+    () => ({
+      primaryCategories: editor.primaryBudgetCategories,
+      internalServiceCategories: editor.internalServiceCategories,
+      groupedItems: editor.groupedItems,
+      expandedCategories,
+      missingCategories: editor.missingCategories,
+      editingCell,
+      profitabilityCategoryMap: editor.profitabilityCategoryMap,
+      isLocked: editor.isLocked,
+      onToggleCategory: toggleCategory,
+      onAddRow: handleAddRow,
+      onDeleteCategory: handleDeleteCategory,
+      onDeleteRow: editor.deleteRow,
+      onCellClick: handleCellClick,
+      onCellBlur: handleCellBlur,
+      onUpdate: editor.updateItem,
+    }),
+    [
+      editor.primaryBudgetCategories,
+      editor.internalServiceCategories,
+      editor.groupedItems,
+      expandedCategories,
+      editor.missingCategories,
+      editingCell,
+      editor.profitabilityCategoryMap,
+      editor.isLocked,
+      toggleCategory,
+      handleAddRow,
+      handleDeleteCategory,
+      editor.deleteRow,
+      handleCellClick,
+      handleCellBlur,
+      editor.updateItem,
+    ],
+  );
+
+  const sidebarsProps = useMemo(
+    () => ({
+      activeSidebar,
+      taxNf: editor.budget?.taxNf ?? 0,
+      grandTotal: editor.budgetGrandTotal,
+      billingSummary: editor.billingSummary,
+      paymentTotals: editor.paymentScheduleSummary.totals,
+      internalServicesSummary: editor.internalServicesSummary,
+      honorariumBase: editor.billingSummary.honorariumBase,
+      honorariumPercentage: editor.honorariumPercentage,
+      advancePayment: editor.paymentScheduleSummary.totals.paymentAdvance,
+      profitabilitySummary: editor.profitabilitySummary,
+      primaryBudgetItems: editor.primaryBudgetItems,
+      onHonorariumPercentageChange: editor.updateHonorariumPercentage,
+    }),
+    [
+      activeSidebar,
+      editor.budget,
+      editor.budgetGrandTotal,
+      editor.billingSummary,
+      editor.paymentScheduleSummary.totals,
+      editor.internalServicesSummary,
+      editor.honorariumPercentage,
+      editor.profitabilitySummary,
+      editor.primaryBudgetItems,
+      editor.updateHonorariumPercentage,
+    ],
+  );
+
   const handleApproveConfirm = useCallback(async () => {
     try {
       await editor.handleApprove();
@@ -122,14 +196,7 @@ export function BudgetEditor() {
   }, [editor.handleApprove]);
 
   if (editor.isLoading || !editor.budget) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center bg-background">
-        <div className="rounded-2xl border border-border bg-card px-6 py-5 text-center shadow-sm">
-          <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Carregando orçamento</div>
-          <div className="mt-2 text-sm text-muted-foreground">Buscando dados da API...</div>
-        </div>
-      </div>
-    );
+    return <PageLoader className="bg-background" />;
   }
 
   return (
@@ -139,52 +206,15 @@ export function BudgetEditor() {
         activeSidebar={activeSidebar}
         isLocked={editor.isLocked}
         onBudgetChange={handleBudgetChange}
-        onToggleSidebar={() => setActiveSidebar(activeSidebar === "summary" ? null : "summary")}
-        onToggleProfitability={() => setActiveSidebar(activeSidebar === "profitability" ? null : "profitability")}
-        onSave={editor.saveBudget}
+        onToggleSidebar={toggleSummarySidebar}
+        onToggleProfitability={toggleProfitabilitySidebar}
+        onSave={(headerUpdates) => void editor.saveBudget(headerUpdates)}
         onNavigateBack={() => navigate("/")}
       />
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="flex-1 flex flex-col bg-muted/50 min-w-0 min-h-0">
-          <BudgetSpreadsheet
-            primaryCategories={editor.primaryBudgetCategories}
-            internalServiceCategories={editor.internalServiceCategories}
-            groupedItems={editor.groupedItems}
-            expandedCategories={expandedCategories}
-            missingCategories={editor.missingCategories}
-            editingCell={editingCell}
-            profitabilitySummary={editor.profitabilitySummary}
-            isLocked={editor.isLocked}
-            onToggleCategory={toggleCategory}
-            onAddRow={handleAddRow}
-            onDeleteCategory={handleDeleteCategory}
-            onDeleteRow={editor.deleteRow}
-            onCellClick={handleCellClick}
-            onCellBlur={handleCellBlur}
-            onUpdate={editor.updateItem}
-          />
-        </div>
-
-        <BudgetSummaryPanel
-          isOpen={activeSidebar === "summary"}
-          taxNf={editor.budget.taxNf}
-          grandTotal={editor.budgetGrandTotal}
-          billingSummary={editor.billingSummary}
-          paymentTotals={editor.paymentScheduleSummary.totals}
-          internalServicesSummary={editor.internalServicesSummary}
-          honorariumBase={editor.billingSummary.honorariumBase}
-          honorariumPercentage={editor.honorariumPercentage}
-          advancePayment={editor.paymentScheduleSummary.totals.paymentAdvance}
-          onHonorariumPercentageChange={editor.updateHonorariumPercentage}
-        />
-
-        <ProfitabilitySidebar
-          isOpen={activeSidebar === "profitability"}
-          summary={editor.profitabilitySummary}
-          items={editor.primaryBudgetItems}
-          onUpdateItem={editor.updateItem}
-        />
+        <BudgetEditorSpreadsheetArea {...spreadsheetProps} />
+        <BudgetEditorSidebars {...sidebarsProps} />
       </div>
 
       {categoryToDelete && (

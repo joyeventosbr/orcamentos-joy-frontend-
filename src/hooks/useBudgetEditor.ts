@@ -1,4 +1,10 @@
 import { budgetLinesReq } from "@/src/api/budget-lines/budget-lines.req";
+import {
+  buildBulkRequest,
+  mapBudgetToUpdateRequest,
+  mapDetailToBudget,
+  mapLineToItem,
+} from "@/src/api/budgets/budgets.mappers";
 import { budgetsKeys } from "@/src/api/budgets/budgets.keys";
 import { budgetsReq } from "@/src/api/budgets/budgets.req";
 import { categoriesKeys } from "@/src/api/categories/categories.keys";
@@ -6,216 +12,40 @@ import { categoriesReq } from "@/src/api/categories/categories.req";
 import { useBudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
 import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
 import { usePaymentScheduleSummary } from "@/src/hooks/usePaymentScheduleSummary";
-import { useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
+import { ProfitabilityCategory, useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
+import { buildStableGroupedItems } from "@/src/lib/budgetGroupedItems";
+import { buildStableProfitabilityCategoryMap } from "@/src/lib/stableProfitabilityMap";
 import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from "@/src/lib/budgetFactory";
 import { IBudgetValidationResult, validateBudget } from "@/src/lib/budgetValidation";
 import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage } from "@/src/types";
 import {
   ApiBudget,
-  BillingType,
-  BudgetDetail,
-  BudgetEditorInfo,
-  BudgetLine,
   BulkUpdateBudgetLinesRequest,
-  CreateBudgetLineRequest,
-  PaymentTerm,
-  UpdateBudgetLineRequest,
   UpdateBudgetRequest,
 } from "@/src/types/api.types";
-import { useAuthStore } from "@/src/store/auth.store";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-
-// --- Mappers ---
-
-const PAYMENT_TERM_TO_DEADLINE: Record<PaymentTerm, string> = {
-  [PaymentTerm.THIRTY_DAYS]: "30",
-  [PaymentTerm.FORTY_FIVE_DAYS]: "45",
-  [PaymentTerm.SIXTY_DAYS]: "60",
-  [PaymentTerm.NINETY_DAYS]: "90",
-  [PaymentTerm.ONE_HUNDRED_TWENTY_DAYS]: "120",
-};
-
-const DEADLINE_TO_PAYMENT_TERM: Record<string, PaymentTerm> = {
-  "30": PaymentTerm.THIRTY_DAYS,
-  "45": PaymentTerm.FORTY_FIVE_DAYS,
-  "60": PaymentTerm.SIXTY_DAYS,
-  "90": PaymentTerm.NINETY_DAYS,
-  "120": PaymentTerm.ONE_HUNDRED_TWENTY_DAYS,
-};
-
-function emptyToUndefined(value?: string): string | undefined {
-  if (value == null) return undefined;
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
-function getCurrentEditorInfo(): BudgetEditorInfo | undefined {
-  const user = useAuthStore.getState().currentUser;
-  if (!user) return undefined;
-  return { name: user.name, email: user.email };
-}
 
 function patchBudgetListEditMetadata(
   queryClient: ReturnType<typeof useQueryClient>,
   budgetId: string,
   updatedAt: string,
-  lastEditedBy?: BudgetEditorInfo,
+  audit?: Pick<ApiBudget, "createdBy" | "updatedBy">,
 ) {
   queryClient.setQueryData<ApiBudget[]>(budgetsKeys.queries.list, (current) => {
     if (!current) return current;
     return current.map((item) =>
-      item.id === budgetId ? { ...item, updatedAt, ...(lastEditedBy ? { lastEditedBy } : {}) } : item,
+      item.id === budgetId
+        ? {
+            ...item,
+            updatedAt,
+            ...(audit?.createdBy !== undefined && { createdBy: audit.createdBy }),
+            ...(audit?.updatedBy !== undefined && { updatedBy: audit.updatedBy }),
+          }
+        : item,
     );
   });
-}
-
-function mapDetailToBudget(detail: BudgetDetail): Budget {
-  return {
-    id: detail.id,
-    jobId: detail.folderId,
-    name: detail.name,
-    status: "Concorrência",
-    phase: "concorrencia",
-    isLocked: false,
-    totalValue: 0,
-    lastUpdated: detail.updatedAt ?? detail.createdAt,
-    lastEditedBy: detail.lastEditedBy,
-    items: [],
-    client: detail.customerName,
-    job: detail.jobDescription ?? "",
-    deadline: detail.paymentTerm ? PAYMENT_TERM_TO_DEADLINE[detail.paymentTerm] : "",
-    location: detail.location ?? "",
-    date: detail.eventDate ?? "",
-    participants: detail.participants ?? "",
-    taxNf: detail.taxNf,
-  };
-}
-
-function mapLineToItem(line: BudgetLine): BudgetItem {
-  return {
-    id: line.id,
-    categoryId: line.categoryCode,
-    itemNumber: `${line.categoryCode}.${line.order}`,
-    name: line.name,
-    description: line.description,
-    billingType: (line.billingType ?? "") as BudgetItem["billingType"],
-    quantity: line.quantity,
-    days: line.dailyRates,
-    unitPrice: line.unitValue,
-    total: line.totalValue,
-    paymentAdvance: line.upfrontPayment,
-    payment30d: line.installment30Days,
-    payment45d: line.installment45Days,
-    payment60d: line.installment60Days,
-    payment90d: line.installment90Days,
-    payment120d: line.installment120Days ?? 0,
-    fornecedorName: line.supplier ?? "",
-    fornecedorValue: line.supplierValue ?? 0,
-    percentBV: line.percentBv ?? 0,
-    percentNfOver: line.percentNfOver ?? 0,
-  };
-}
-
-function toApiBillingType(billingType: BudgetItem["billingType"]): BillingType | null {
-  if (!billingType) return null;
-  return billingType as BillingType;
-}
-
-function toApiSupplier(name: string): string | null {
-  const trimmed = name.trim();
-  return trimmed === "" ? null : trimmed;
-}
-
-function mapItemProfitabilityToApi(item: BudgetItem) {
-  return {
-    supplier: toApiSupplier(item.fornecedorName),
-    supplierValue: item.fornecedorValue,
-    percentBv: item.percentBV,
-    percentNfOver: item.percentNfOver,
-  };
-}
-
-function extractOrder(itemNumber: string): number {
-  const parts = itemNumber.split(".");
-  const last = parts[parts.length - 1];
-  return parseInt(last, 10) || 0;
-}
-
-function mapItemToCreateRequest(item: BudgetItem, budgetId: string): CreateBudgetLineRequest {
-  return {
-    budgetId,
-    categoryCode: item.categoryId,
-    order: extractOrder(item.itemNumber),
-    name: item.name,
-    description: item.description,
-    billingType: toApiBillingType(item.billingType),
-    quantity: item.quantity,
-    dailyRates: item.days,
-    unitValue: item.unitPrice,
-    totalValue: item.total,
-    upfrontPayment: item.paymentAdvance,
-    installment30Days: item.payment30d,
-    installment45Days: item.payment45d,
-    installment60Days: item.payment60d,
-    installment90Days: item.payment90d,
-    installment120Days: item.payment120d,
-    ...mapItemProfitabilityToApi(item),
-  };
-}
-
-function mapItemToUpdateRequest(item: BudgetItem): UpdateBudgetLineRequest & { id: string } {
-  return {
-    id: item.id,
-    categoryCode: item.categoryId,
-    order: extractOrder(item.itemNumber),
-    name: item.name,
-    description: item.description,
-    billingType: toApiBillingType(item.billingType),
-    quantity: item.quantity,
-    dailyRates: item.days,
-    unitValue: item.unitPrice,
-    totalValue: item.total,
-    upfrontPayment: item.paymentAdvance,
-    installment30Days: item.payment30d,
-    installment45Days: item.payment45d,
-    installment60Days: item.payment60d,
-    installment90Days: item.payment90d,
-    installment120Days: item.payment120d,
-    ...mapItemProfitabilityToApi(item),
-  };
-}
-
-function mapBudgetToUpdateRequest(budget: Budget): UpdateBudgetRequest {
-  return {
-    name: budget.name,
-    jobDescription: budget.job,
-    location: emptyToUndefined(budget.location),
-    eventDate: emptyToUndefined(budget.date),
-    participants: emptyToUndefined(budget.participants),
-    paymentTerm: budget.deadline ? DEADLINE_TO_PAYMENT_TERM[budget.deadline] : undefined,
-  };
-}
-
-function buildBulkRequest(
-  currentItems: BudgetItem[],
-  originalIds: Set<string>,
-  budgetId: string,
-): BulkUpdateBudgetLinesRequest {
-  const currentIds = new Set(currentItems.map((i) => i.id));
-
-  const toCreate = currentItems.filter((i) => !originalIds.has(i.id)).map((i) => mapItemToCreateRequest(i, budgetId));
-
-  const toUpdate = currentItems.filter((i) => originalIds.has(i.id)).map((i) => mapItemToUpdateRequest(i));
-
-  const toDelete = [...originalIds].filter((id) => !currentIds.has(id));
-
-  return {
-    ...(toCreate.length > 0 && { create: toCreate }),
-    ...(toUpdate.length > 0 && { update: toUpdate }),
-    ...(toDelete.length > 0 && { delete: toDelete }),
-  };
 }
 
 // --- Hook ---
@@ -224,9 +54,11 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const queryClient = useQueryClient();
 
   const { data: budgetDetail, isLoading: budgetLoading } = useQuery({
-    queryKey: ["budgets", "detail", budgetId],
+    queryKey: budgetsKeys.queries.detail(budgetId!),
     queryFn: () => budgetsReq.details(budgetId!),
     enabled: !!budgetId,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: apiCategories = [], isLoading: categoriesLoading } = useQuery({
@@ -236,6 +68,8 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
   // IDs das linhas que vieram do backend (para diff no save)
   const originalLineIdsRef = useRef<Set<string>>(new Set());
+  const groupedItemsRef = useRef<Record<string, BudgetItem[]>>({});
+  const profitabilityCategoryMapRef = useRef<Map<string, ProfitabilityCategory>>(new Map());
 
   const [budget, setBudget] = useState<Budget | null>(null);
 
@@ -248,6 +82,8 @@ export function useBudgetEditor(budgetId: string | undefined) {
       totalValue: recalculateBudgetTotal(items),
     });
     originalLineIdsRef.current = new Set(budgetDetail.lines.map((l) => l.id));
+    groupedItemsRef.current = {};
+    profitabilityCategoryMapRef.current = new Map();
   }, [budgetDetail]);
 
   const isLoading = budgetLoading || categoriesLoading;
@@ -271,11 +107,8 @@ export function useBudgetEditor(budgetId: string | undefined) {
   );
 
   const groupedItems = useMemo(() => {
-    const groups: Record<string, BudgetItem[]> = {};
-    budgetItems.forEach((item) => {
-      if (!groups[item.categoryId]) groups[item.categoryId] = [];
-      groups[item.categoryId].push(item);
-    });
+    const groups = buildStableGroupedItems(budgetItems, groupedItemsRef.current);
+    groupedItemsRef.current = groups;
     return groups;
   }, [budgetItems]);
 
@@ -300,11 +133,22 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
   const profitabilitySummary = useProfitabilitySummary({
     primaryItems: primaryBudgetItems,
+    categories: primaryBudgetCategories,
     internalItemsTotal: internalServicesSummary.internalItemsTotal,
     honorariumPercentage,
     prazoDias: Number(budget?.deadline) || 0,
     antecipadoCliente: paymentScheduleSummary.totals.paymentAdvance,
   });
+
+  const profitabilityCategoryMap = useMemo(() => {
+    const map = buildStableProfitabilityCategoryMap(
+      profitabilitySummary?.categories,
+      profitabilityCategoryMapRef.current,
+    );
+    profitabilityCategoryMapRef.current = map;
+    return map;
+  }, [profitabilitySummary?.categories]);
+
   const budgetGrandTotal =
     internalServicesSummary.subtotal + internalServicesSummary.serviceTax + billingSummary.totalSuppliers;
 
@@ -313,17 +157,19 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const updateItem = useCallback(
     (id: string, field: keyof BudgetItem, value: string | number) => {
       if (isLocked) return;
-      setBudget((prev) => {
-        if (!prev) return prev;
-        const newItems = prev.items.map((item) => {
-          if (item.id !== id) return item;
-          const updated = { ...item, [field]: value };
-          if (field === "quantity" || field === "days" || field === "unitPrice") {
-            return recalculateBudgetItemTotal(updated);
-          }
-          return updated;
+      startTransition(() => {
+        setBudget((prev) => {
+          if (!prev) return prev;
+          const newItems = prev.items.map((item) => {
+            if (item.id !== id) return item;
+            const updated = { ...item, [field]: value };
+            if (field === "quantity" || field === "days" || field === "unitPrice") {
+              return recalculateBudgetItemTotal(updated);
+            }
+            return updated;
+          });
+          return { ...prev, items: newItems, totalValue: recalculateBudgetTotal(newItems) };
         });
-        return { ...prev, items: newItems, totalValue: recalculateBudgetTotal(newItems) };
       });
     },
     [isLocked],
@@ -376,7 +222,9 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const updateBudgetFields = useCallback(
     (updates: Partial<Budget>) => {
       if (isLocked) return;
-      setBudget((prev) => (prev ? { ...prev, ...updates } : prev));
+      startTransition(() => {
+        setBudget((prev) => (prev ? { ...prev, ...updates } : prev));
+      });
     },
     [isLocked],
   );
@@ -384,7 +232,9 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const updateHonorariumPercentageValue = useCallback(
     (value: HonorariumPercentage) => {
       if (isLocked) return;
-      setBudget((prev) => (prev ? { ...prev, honorariumPercentage: value } : prev));
+      startTransition(() => {
+        setBudget((prev) => (prev ? { ...prev, honorariumPercentage: value } : prev));
+      });
     },
     [isLocked],
   );
@@ -404,10 +254,11 @@ export function useBudgetEditor(budgetId: string | undefined) {
     mutationFn: (body: BulkUpdateBudgetLinesRequest) => budgetLinesReq.bulkUpdate(body),
   });
 
-  const saveBudget = useCallback(async (): Promise<boolean> => {
-    if (!budget || !budgetId) return false;
+  const saveBudget = useCallback(async (headerOverrides?: Partial<Budget>): Promise<boolean> => {
+    const budgetToSave = budget && headerOverrides ? { ...budget, ...headerOverrides } : budget;
+    if (!budgetToSave || !budgetId) return false;
 
-    const { missingFields, inconsistentItems } = validateBudget(budget);
+    const { missingFields, inconsistentItems } = validateBudget(budgetToSave);
     if (missingFields.length > 0) {
       toast.error(`Preencha os campos obrigatórios: ${missingFields.join(", ")}`);
       return false;
@@ -417,29 +268,42 @@ export function useBudgetEditor(budgetId: string | undefined) {
       return false;
     }
 
-    const updatedBudget = await updateBudgetMutation.mutateAsync({
+    if (headerOverrides && budget) {
+      setBudget(budgetToSave);
+    }
+
+    await updateBudgetMutation.mutateAsync({
       id: budgetId,
-      body: mapBudgetToUpdateRequest(budget),
+      body: mapBudgetToUpdateRequest(budgetToSave),
     });
 
-    const bulk = buildBulkRequest(budget.items, originalLineIdsRef.current, budgetId);
+    const bulk = buildBulkRequest(budgetToSave.items, originalLineIdsRef.current, budgetId);
     if (bulk.create?.length || bulk.update?.length || bulk.delete?.length) {
       const savedLines = await bulkUpdateMutation.mutateAsync(bulk);
-      // Atualiza os IDs originais após o save para o próximo diff ser correto
       const newlyCreatedIds = savedLines.map((l) => l.id);
       const survivingOriginalIds = [...originalLineIdsRef.current].filter((id) => !bulk.delete?.includes(id));
       originalLineIdsRef.current = new Set([...survivingOriginalIds, ...newlyCreatedIds]);
     }
 
-    const lastEditedBy = updatedBudget.lastEditedBy ?? getCurrentEditorInfo();
-    const lastUpdated = updatedBudget.updatedAt ?? new Date().toISOString();
+    await queryClient.invalidateQueries({ queryKey: budgetsKeys.queries.detail(budgetId) });
+    const detail = await queryClient.fetchQuery({
+      queryKey: budgetsKeys.queries.detail(budgetId),
+      queryFn: () => budgetsReq.details(budgetId),
+      staleTime: 0,
+    });
 
-    setBudget((prev) =>
-      prev ? { ...prev, lastUpdated, ...(lastEditedBy ? { lastEditedBy } : {}) } : prev,
-    );
-    patchBudgetListEditMetadata(queryClient, budgetId, lastUpdated, lastEditedBy);
+    const items = detail.lines.map(mapLineToItem);
+    setBudget({
+      ...mapDetailToBudget(detail),
+      items,
+      totalValue: recalculateBudgetTotal(items),
+    });
+    originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
 
-    queryClient.invalidateQueries({ queryKey: ["budgets", "detail", budgetId] });
+    patchBudgetListEditMetadata(queryClient, budgetId, detail.updatedAt ?? detail.createdAt, {
+      createdBy: detail.createdBy,
+      updatedBy: detail.updatedBy,
+    });
     toast.success("Orçamento salvo com sucesso!");
     return true;
   }, [budget, budgetId, updateBudgetMutation, bulkUpdateMutation, queryClient]);
@@ -466,6 +330,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
     internalServicesSummary,
     paymentScheduleSummary,
     profitabilitySummary,
+    profitabilityCategoryMap,
     budgetGrandTotal,
     honorariumPercentage,
     updateItem,

@@ -30,11 +30,6 @@ export enum PaymentTerm {
   ONE_HUNDRED_TWENTY_DAYS = "120_DAYS",
 }
 
-export interface BudgetEditorInfo {
-  name: string;
-  email: string;
-}
-
 export interface ApiBudget {
   id: string;
   name: string;
@@ -47,7 +42,10 @@ export interface ApiBudget {
   participants?: string;
   paymentTerm?: PaymentTerm;
   updatedAt?: string;
-  lastEditedBy?: BudgetEditorInfo;
+  /** Visível apenas para ADMIN */
+  createdBy?: string;
+  /** Visível apenas para ADMIN; null enquanto o orçamento não foi editado */
+  updatedBy?: string | null;
 }
 
 export interface CreateBudgetRequest {
@@ -201,6 +199,7 @@ export interface UpdateBudgetLineRequest {
 }
 
 export interface BulkUpdateBudgetLinesRequest {
+  id: string;
   create?: CreateBudgetLineRequest[];
   update?: Array<UpdateBudgetLineRequest & { id: string }>;
   delete?: string[];
