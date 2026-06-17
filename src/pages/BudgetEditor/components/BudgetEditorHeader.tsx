@@ -13,7 +13,6 @@ import {
   CheckCircle,
   Download,
   FileSpreadsheet,
-  FileText,
   LayoutTemplate,
   Lock,
   Save,
@@ -173,7 +172,7 @@ export function BudgetEditorHeader({
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
                 >
                   <FileSpreadsheet size={16} className="text-gray-900" />
-                  Excel — Completa (interna)
+                  Excel — Completa
                 </button>
                 <button
                   onClick={() => onExportExcel("client")}
@@ -181,10 +180,6 @@ export function BudgetEditorHeader({
                 >
                   <FileSpreadsheet size={16} className="text-gray-900" />
                   Excel — Cliente
-                </button>
-                <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
-                  <FileText size={16} className="text-gray-900" />
-                  PDF Download
                 </button>
               </div>
             </div>
