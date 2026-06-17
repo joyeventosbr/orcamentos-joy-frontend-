@@ -34,9 +34,9 @@ export function canDeleteBudget(budget: Pick<ApiBudget, "version" | "parentId" |
   return budget.version === 0 && budget.parentId === null && budget.isDeletable;
 }
 
-/** Badge de versão só em cópias oficiais de aprovação (vN no nome vem do backend ao aprovar). */
-export function shouldShowBudgetVersion(budget: Pick<ApiBudget, "version" | "parentId">): boolean {
-  return budget.parentId !== null && budget.version >= 1;
+/** Badge oculto só em orçamentos raiz (version 0); v1+ exibe o número da versão. */
+export function shouldShowBudgetVersion(budget: Pick<ApiBudget, "version">): boolean {
+  return budget.version >= 1;
 }
 
 export function getStatusBadgeVariant(status: BudgetStatus): "default" | "success" | "warning" | "neutral" {
