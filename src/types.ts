@@ -11,6 +11,10 @@ export const BILLING_TYPE_OPTIONS = ["VIA CLIENTE", "ND OU REPASSE", "VIA NF", "
 
 export type BudgetBillingType = (typeof BILLING_TYPE_OPTIONS)[number];
 
+export function isInternalServiceCategory(categoryId: string): boolean {
+  return categoryId.startsWith("2.");
+}
+
 export const HONORARIUM_PERCENTAGE_OPTIONS = [10, 15, 20] as const;
 
 export type HonorariumPercentage = (typeof HONORARIUM_PERCENTAGE_OPTIONS)[number];

@@ -11,7 +11,9 @@ type BudgetItemRowCellProps = {
   editingCell: { id: string; field: keyof BudgetItem } | null;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
+  onCellTab: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
+  isBillingTypeLocked: boolean;
 };
 
 interface BudgetItemRowProps extends BudgetItemRowCellProps {
@@ -26,14 +28,16 @@ const BudgetItemRow = memo(
     item,
     isLast,
     isLocked,
+    isBillingTypeLocked,
     editingCell,
     onCellClick,
     onCellBlur,
+    onCellTab,
     onUpdate,
     onDeleteRow,
   }: BudgetItemRowProps) {
     const profitabilityMetrics = mapBudgetItemToProfitabilityMetrics(item);
-    const cellProps = { editingCell, onCellClick, onCellBlur, onUpdate };
+    const cellProps = { editingCell, onCellClick, onCellBlur, onCellTab, onUpdate, isBillingTypeLocked };
 
     return (
       <tr
@@ -90,8 +94,8 @@ const BudgetItemRow = memo(
         <td className="align-top p-0">
           <BudgetTableCell {...cellProps} item={item} field="percentBV" type="number" align="right" />
         </td>
-        <td className="align-middle px-3 py-2 text-right text-slate-400 bg-slate-50/50">
-          {`${profitabilityMetrics.percentNfBV || 0}%`}
+        <td className="align-top p-0">
+          <BudgetTableCell {...cellProps} item={item} field="percentNfBV" type="number" align="right" />
         </td>
         <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
           {formatCurrencyBRL(profitabilityMetrics.rsBV)}
@@ -123,10 +127,12 @@ const BudgetItemRow = memo(
     if (prev.item !== next.item) return false;
     if (prev.isLast !== next.isLast) return false;
     if (prev.isLocked !== next.isLocked) return false;
+    if (prev.isBillingTypeLocked !== next.isBillingTypeLocked) return false;
     if (prev.onDeleteRow !== next.onDeleteRow) return false;
     if (prev.onUpdate !== next.onUpdate) return false;
     if (prev.onCellClick !== next.onCellClick) return false;
     if (prev.onCellBlur !== next.onCellBlur) return false;
+    if (prev.onCellTab !== next.onCellTab) return false;
 
     const prevRowEditing = prev.editingCell?.id === prev.item.id;
     const nextRowEditing = next.editingCell?.id === next.item.id;
@@ -145,6 +151,7 @@ interface BudgetCategorySectionProps {
   isExpanded: boolean;
   allowInternalStyle?: boolean;
   isLocked?: boolean;
+  isBillingTypeLocked?: boolean;
   categoryProfitability?: ProfitabilityCategory;
   editingCell: { id: string; field: keyof BudgetItem } | null;
   onToggle: (categoryId: string) => void;
@@ -153,6 +160,7 @@ interface BudgetCategorySectionProps {
   onDeleteRow: (id: string) => void;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
+  onCellTab: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
 }
 
@@ -162,6 +170,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
   isExpanded,
   allowInternalStyle = false,
   isLocked = false,
+  isBillingTypeLocked = false,
   categoryProfitability,
   editingCell,
   onToggle,
@@ -170,6 +179,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
   onDeleteRow,
   onCellClick,
   onCellBlur,
+  onCellTab,
   onUpdate,
 }: BudgetCategorySectionProps) {
   const isInternalServicesCategory = allowInternalStyle && category.id === "2.1";
@@ -254,9 +264,11 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
             item={item}
             isLast={index === items.length - 1}
             isLocked={isLocked}
+            isBillingTypeLocked={isBillingTypeLocked}
             editingCell={editingCell}
             onCellClick={onCellClick}
             onCellBlur={onCellBlur}
+            onCellTab={onCellTab}
             onUpdate={onUpdate}
             onDeleteRow={onDeleteRow}
           />
@@ -298,6 +310,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
   if (prev.isExpanded !== next.isExpanded) return false;
   if (prev.allowInternalStyle !== next.allowInternalStyle) return false;
   if (prev.isLocked !== next.isLocked) return false;
+  if (prev.isBillingTypeLocked !== next.isBillingTypeLocked) return false;
   if (prev.categoryProfitability !== next.categoryProfitability) return false;
   if (prev.onToggle !== next.onToggle) return false;
   if (prev.onAddRow !== next.onAddRow) return false;
@@ -306,6 +319,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
   if (prev.onUpdate !== next.onUpdate) return false;
   if (prev.onCellClick !== next.onCellClick) return false;
   if (prev.onCellBlur !== next.onCellBlur) return false;
+  if (prev.onCellTab !== next.onCellTab) return false;
 
   const prevHasEditing = prev.items.some((item) => item.id === prev.editingCell?.id);
   const nextHasEditing = next.items.some((item) => item.id === next.editingCell?.id);

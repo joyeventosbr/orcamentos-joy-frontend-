@@ -1,4 +1,4 @@
-import { Budget, BudgetItem } from "@/src/types";
+import { Budget, BudgetItem, isInternalServiceCategory } from "@/src/types";
 import {
   BillingType,
   BudgetDetail,
@@ -64,7 +64,9 @@ export function mapLineToItem(line: BudgetLine): BudgetItem {
     itemNumber: `${line.categoryCode}.${line.order}`,
     name: line.name,
     description: line.description,
-    billingType: (line.billingType ?? "") as BudgetItem["billingType"],
+    billingType: isInternalServiceCategory(line.categoryCode)
+      ? "VIA NF"
+      : ((line.billingType ?? "") as BudgetItem["billingType"]),
     quantity: line.quantity,
     days: line.dailyRates,
     unitPrice: line.unitValue,
@@ -78,6 +80,7 @@ export function mapLineToItem(line: BudgetLine): BudgetItem {
     fornecedorName: line.supplier ?? "",
     fornecedorValue: line.supplierValue ?? 0,
     percentBV: line.percentBv ?? 0,
+    percentNfBV: line.percentNfBv ?? undefined,
     percentNfOver: line.percentNfOver ?? 0,
   };
 }
@@ -97,6 +100,7 @@ function mapItemProfitabilityToApi(item: BudgetItem) {
     supplier: toApiSupplier(item.fornecedorName),
     supplierValue: item.fornecedorValue,
     percentBv: item.percentBV,
+    percentNfBv: item.percentNfBV ?? null,
     percentNfOver: item.percentNfOver,
   };
 }
@@ -160,6 +164,17 @@ export function mapBudgetToUpdateRequest(budget: Budget): UpdateBudgetRequest {
     participants: emptyToUndefined(budget.participants),
     paymentTerm: budget.deadline ? DEADLINE_TO_PAYMENT_TERM[budget.deadline] : undefined,
   };
+}
+
+export function serializeBudgetForDirtyCheck(budget: Budget): string {
+  const items = [...budget.items]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((item) => mapItemToUpdateRequest(item));
+
+  return JSON.stringify({
+    header: mapBudgetToUpdateRequest(budget),
+    items,
+  });
 }
 
 export function buildBulkRequest(

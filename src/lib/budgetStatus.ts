@@ -26,6 +26,10 @@ export function canApproveBudget(status: BudgetStatus): boolean {
   return status === BudgetStatus.Concorrencia || status === BudgetStatus.Producao;
 }
 
+export function isBudgetApproved(status: BudgetStatus): boolean {
+  return status === BudgetStatus.AprovadoConcorrencia || status === BudgetStatus.AprovadoProducao;
+}
+
 export function canDuplicateBudget(status: BudgetStatus): boolean {
   return status !== BudgetStatus.AprovadoConcorrencia && status !== BudgetStatus.AprovadoProducao;
 }

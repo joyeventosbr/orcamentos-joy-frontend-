@@ -1,4 +1,4 @@
-import { BudgetItem } from "@/src/types";
+import { BudgetItem, isInternalServiceCategory } from "@/src/types";
 
 const createId = (prefix: string) => `${prefix}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -13,7 +13,7 @@ export function createBudgetItem(
     itemNumber,
     name: "",
     description: "",
-    billingType: "",
+    billingType: isInternalServiceCategory(categoryId) ? "VIA NF" : "",
     quantity: 1,
     days: 1,
     unitPrice: 0,

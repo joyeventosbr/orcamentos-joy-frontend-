@@ -12,12 +12,14 @@ export type BudgetEditorSpreadsheetAreaProps = {
   editingCell: { id: string; field: keyof BudgetItem } | null;
   profitabilityCategoryMap: Map<string, ProfitabilityCategory>;
   isLocked: boolean;
+  isBillingTypeLocked: boolean;
   onToggleCategory: (categoryId: string) => void;
   onAddRow: (categoryId: string) => void;
   onDeleteCategory: (categoryId: string) => void;
   onDeleteRow: (id: string) => void;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
+  onCellTab: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
 };
 

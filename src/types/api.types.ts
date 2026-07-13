@@ -157,6 +157,7 @@ export interface BudgetLine {
   supplier: string | null;
   supplierValue: number | null;
   percentBv: number | null;
+  percentNfBv: number | null;
   percentNfOver: number | null;
 }
 
@@ -183,6 +184,7 @@ export interface CreateBudgetLineRequest {
   supplier?: string | null;
   supplierValue?: number | null;
   percentBv?: number | null;
+  percentNfBv?: number | null;
   percentNfOver?: number | null;
 }
 
@@ -208,6 +210,7 @@ export interface UpdateBudgetLineRequest {
   supplier?: string | null;
   supplierValue?: number | null;
   percentBv?: number | null;
+  percentNfBv?: number | null;
   percentNfOver?: number | null;
 }
 

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppData } from "../../context/AppDataContext";
 import { useDashboardFilters } from "@/src/hooks/useDashboardFilters";
 import { BUDGET_FOLDER_OPTIONS, BudgetFolder } from "@/src/types";
+import { buildDashboardReturnState, DashboardReturnState } from "@/src/lib/dashboardNavigation";
 import { CreateEntityModal } from "./components/CreateEntityModal";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardToolbar } from "./components/DashboardToolbar";
@@ -17,6 +18,7 @@ type DashboardLevel = "customers" | "folders" | "budgets";
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentCustomerId, setCurrentCustomerId] = useState<string | null>(null);
@@ -43,6 +45,37 @@ export function Dashboard() {
     });
 
   const level: DashboardLevel = currentFolderId ? "budgets" : currentCustomerId ? "folders" : "customers";
+
+  useEffect(() => {
+    const state = location.state as DashboardReturnState | null;
+    if (!state?.customerId || !state?.folderId) return;
+    setCurrentCustomerId(state.customerId);
+    setCurrentFolderId(state.folderId);
+    if (state.budgetFolderTab) setBudgetFolderTab(state.budgetFolderTab);
+  }, [location.key, location.state]);
+
+  const dashboardReturnState =
+    currentCustomerId && currentFolderId
+      ? buildDashboardReturnState({
+          customerId: currentCustomerId,
+          folderId: currentFolderId,
+          budgetFolderTab,
+        })
+      : null;
+
+  const navigateToEditor = (budgetId: string, status?: ApiBudget["status"]) => {
+    const state =
+      dashboardReturnState ??
+      (currentCustomerId && currentFolderId
+        ? buildDashboardReturnState({
+            customerId: currentCustomerId,
+            folderId: currentFolderId,
+            budgetFolderTab,
+            status,
+          })
+        : undefined);
+    navigate(`/editor/${budgetId}`, state ? { state } : undefined);
+  };
 
   const handleBack = () => {
     setSearchQuery("");
@@ -97,7 +130,7 @@ export function Dashboard() {
     try {
       const copied = await copyBudget(budgetId);
       toast.success("Orçamento duplicado com sucesso!");
-      navigate(`/editor/${copied.id}`);
+      navigateToEditor(copied.id, copied.status);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao duplicar orçamento");
     } finally {
@@ -113,7 +146,7 @@ export function Dashboard() {
     } else if (level === "budgets" && currentFolderId && currentCustomerId) {
       const budget = await addBudget({ folderId: currentFolderId, customerId: currentCustomerId, name });
       setIsModalOpen(false);
-      navigate(`/editor/${budget.id}`);
+      navigateToEditor(budget.id);
       return;
     }
     setIsModalOpen(false);
@@ -195,10 +228,11 @@ export function Dashboard() {
             onClearSearch={() => setSearchQuery("")}
           />
         )}
-        {level === "budgets" && (
+        {level === "budgets" && dashboardReturnState && (
           <BudgetsView
             budgets={filteredBudgets}
             viewMode={viewMode}
+            dashboardReturnState={dashboardReturnState}
             onDuplicate={handleDuplicateBudget}
             onDelete={handleRequestDeleteBudget}
             duplicatingBudgetId={duplicatingBudgetId}

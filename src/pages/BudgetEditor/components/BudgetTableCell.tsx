@@ -1,5 +1,6 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
-import { BILLING_TYPE_OPTIONS, BudgetItem, TBudgetItemUpdater } from "@/src/types";
+import { resolvePercentNfBV } from "@/src/lib/profitability";
+import { BILLING_TYPE_OPTIONS, BudgetItem, isInternalServiceCategory, TBudgetItemUpdater } from "@/src/types";
 import React, { memo, useEffect, useRef, useState } from "react";
 
 function numberToDraft(value: number): string {
@@ -21,11 +22,13 @@ function EditableTextInput({
   align,
   onCommit,
   onBlur,
+  onTab,
 }: {
   value: string;
   align: "left" | "right";
   onCommit: (value: string) => void;
   onBlur: () => void;
+  onTab: () => void;
 }) {
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +60,11 @@ function EditableTextInput({
           commit();
           onBlur();
         }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          commit();
+          onTab();
+        }
       }}
     />
   );
@@ -67,11 +75,13 @@ function EditableTextarea({
   align,
   onCommit,
   onBlur,
+  onTab,
 }: {
   value: string;
   align: "left" | "right";
   onCommit: (value: string) => void;
   onBlur: () => void;
+  onTab: () => void;
 }) {
   const [draft, setDraft] = useState(value);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -100,6 +110,11 @@ function EditableTextarea({
           commit();
           onBlur();
         }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          commit();
+          onTab();
+        }
       }}
     />
   );
@@ -110,11 +125,13 @@ function EditableNumberInput({
   align,
   onCommit,
   onBlur,
+  onTab,
 }: {
   value: number;
   align: "left" | "right";
   onCommit: (value: number) => void;
   onBlur: () => void;
+  onTab: () => void;
 }) {
   const [draft, setDraft] = useState(() => numberToDraft(value));
   const inputRef = useRef<HTMLInputElement>(null);
@@ -153,6 +170,11 @@ function EditableNumberInput({
           commit();
           onBlur();
         }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          commit();
+          onTab();
+        }
       }}
     />
   );
@@ -166,7 +188,9 @@ interface BudgetTableCellProps {
   editingCell: { id: string; field: keyof BudgetItem } | null;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
+  onCellTab: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
+  isBillingTypeLocked?: boolean;
 }
 
 const CURRENCY_FIELDS = [
@@ -180,16 +204,22 @@ const CURRENCY_FIELDS = [
   "payment120d",
   "fornecedorValue",
 ];
-const PERCENT_FIELDS = ["percentBV", "percentNfOver"];
+const PERCENT_FIELDS = ["percentBV", "percentNfBV", "percentNfOver"];
+
+function getPercentNfBVValue(item: BudgetItem): number {
+  return resolvePercentNfBV(item.billingType, item.percentBV || 0, item.percentNfBV);
+}
 
 function areBudgetTableCellPropsEqual(prev: BudgetTableCellProps, next: BudgetTableCellProps): boolean {
   if (prev.item !== next.item) return false;
   if (prev.field !== next.field) return false;
   if (prev.type !== next.type) return false;
   if (prev.align !== next.align) return false;
+  if (prev.isBillingTypeLocked !== next.isBillingTypeLocked) return false;
   if (prev.onUpdate !== next.onUpdate) return false;
   if (prev.onCellClick !== next.onCellClick) return false;
   if (prev.onCellBlur !== next.onCellBlur) return false;
+  if (prev.onCellTab !== next.onCellTab) return false;
 
   const prevIsEditing = prev.editingCell?.id === prev.item.id && prev.editingCell?.field === prev.field;
   const nextIsEditing = next.editingCell?.id === next.item.id && next.editingCell?.field === next.field;
@@ -200,17 +230,30 @@ function areBudgetTableCellPropsEqual(prev: BudgetTableCellProps, next: BudgetTa
 function BillingTypeSelect({
   item,
   hasMissingBillingType,
+  isLocked,
+  isFocused,
   onUpdate,
+  onTab,
 }: {
   item: BudgetItem;
   hasMissingBillingType: boolean;
+  isLocked: boolean;
+  isFocused: boolean;
   onUpdate: TBudgetItemUpdater;
+  onTab: () => void;
 }) {
   const [draft, setDraft] = useState(item.billingType);
+  const selectRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
     setDraft(item.billingType);
   }, [item.billingType]);
+
+  useEffect(() => {
+    if (isFocused) {
+      selectRef.current?.focus();
+    }
+  }, [isFocused]);
 
   const commit = (next: string) => {
     setDraft(next);
@@ -219,9 +262,26 @@ function BillingTypeSelect({
     }
   };
 
+  if (isInternalServiceCategory(item.categoryId)) {
+    return (
+      <div className="h-full w-full px-3 py-2 flex items-center text-sm font-medium text-slate-700">
+        VIA NF
+      </div>
+    );
+  }
+
+  if (isLocked) {
+    return (
+      <div className="h-full w-full px-3 py-2 flex items-center text-sm font-medium text-slate-500">
+        {item.billingType || "—"}
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full px-1 py-1">
       <select
+        ref={selectRef}
         className={`h-8 w-full rounded border px-2 py-1 text-sm font-medium outline-none transition-all focus:bg-white ${
           hasMissingBillingType
             ? "border-red-300 bg-amber-50 text-red-900 focus:border-red-400"
@@ -229,6 +289,12 @@ function BillingTypeSelect({
         }`}
         value={draft}
         onChange={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Tab") {
+            e.preventDefault();
+            onTab();
+          }
+        }}
         title={hasMissingBillingType ? "Selecione o Tipo Faturamento — valor unitário preenchido sem tipo." : undefined}
       >
         <option value="">{hasMissingBillingType ? "⚠ Pendente" : "Selecionar"}</option>
@@ -255,15 +321,31 @@ export const BudgetTableCell = memo(function BudgetTableCell({
   editingCell,
   onCellClick,
   onCellBlur,
+  onCellTab,
   onUpdate,
+  isBillingTypeLocked = false,
 }: BudgetTableCellProps) {
+  const handleTab = () => onCellTab(item.id, field);
+
   if (field === "billingType") {
     const hasMissingBillingType = !item.billingType && (item.unitPrice > 0 || item.total > 0);
+    const isFocused = editingCell?.id === item.id && editingCell?.field === "billingType";
 
-    return <BillingTypeSelect item={item} hasMissingBillingType={hasMissingBillingType} onUpdate={onUpdate} />;
+    return (
+      <BillingTypeSelect
+        item={item}
+        hasMissingBillingType={hasMissingBillingType}
+        isLocked={isBillingTypeLocked}
+        isFocused={isFocused}
+        onUpdate={onUpdate}
+        onTab={handleTab}
+      />
+    );
   }
 
   const isEditing = editingCell?.id === item.id && editingCell?.field === field;
+  const isMissingRequiredNumber =
+    (field === "quantity" && !item.quantity) || (field === "days" && !item.days);
 
   if (isEditing) {
     if (type === "textarea") {
@@ -274,19 +356,23 @@ export const BudgetTableCell = memo(function BudgetTableCell({
             align={align}
             onCommit={(val) => onUpdate(item.id, field, val)}
             onBlur={onCellBlur}
+            onTab={handleTab}
           />
         </div>
       );
     }
 
     if (type === "number") {
+      const numericValue = field === "percentNfBV" ? getPercentNfBVValue(item) : Number(item[field]) || 0;
+
       return (
         <div className="h-full w-full px-1 py-1">
           <EditableNumberInput
-            value={Number(item[field]) || 0}
+            value={numericValue}
             align={align}
             onCommit={(val) => onUpdate(item.id, field, val)}
             onBlur={onCellBlur}
+            onTab={handleTab}
           />
         </div>
       );
@@ -299,6 +385,7 @@ export const BudgetTableCell = memo(function BudgetTableCell({
           align={align}
           onCommit={(val) => onUpdate(item.id, field, val)}
           onBlur={onCellBlur}
+          onTab={handleTab}
         />
       </div>
     );
@@ -308,6 +395,8 @@ export const BudgetTableCell = memo(function BudgetTableCell({
 
   if (CURRENCY_FIELDS.includes(field as string)) {
     displayValue = formatCurrencyBRL(Number(item[field]) || 0);
+  } else if (field === "percentNfBV") {
+    displayValue = `${getPercentNfBVValue(item).toFixed(1)}%`;
   } else if (PERCENT_FIELDS.includes(field as string)) {
     const val = item[field] as number;
     displayValue = `${(val || 0).toFixed(1)}%`;
@@ -315,11 +404,17 @@ export const BudgetTableCell = memo(function BudgetTableCell({
 
   return (
     <div
-      className={`w-full h-full min-h-[36px] px-3 py-2 cursor-text hover:bg-gray-100 transition-colors flex items-center ${align === "right" ? "justify-end" : ""}`}
+      className={`w-full h-full min-h-[36px] px-3 py-2 cursor-text hover:bg-gray-100 transition-colors flex items-center ${align === "right" ? "justify-end" : ""} ${
+        isMissingRequiredNumber ? "bg-amber-50 ring-1 ring-inset ring-red-200" : ""
+      }`}
       onClick={() => onCellClick(item.id, field)}
     >
-      <span className={`whitespace-pre-wrap break-words ${!displayValue ? "text-gray-300 italic text-xs" : ""}`}>
-        {displayValue || "Vazio"}
+      <span
+        className={`whitespace-pre-wrap break-words ${!displayValue ? "text-gray-300 italic text-xs" : ""} ${
+          isMissingRequiredNumber ? "text-red-700 font-medium" : ""
+        }`}
+      >
+        {displayValue || "Obrigatório"}
       </span>
     </div>
   );

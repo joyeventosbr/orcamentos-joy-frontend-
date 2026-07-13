@@ -15,12 +15,14 @@ interface BudgetSpreadsheetProps {
   editingCell: { id: string; field: keyof BudgetItem } | null;
   profitabilityCategoryMap: Map<string, ProfitabilityCategory>;
   isLocked?: boolean;
+  isBillingTypeLocked?: boolean;
   onToggleCategory: (categoryId: string) => void;
   onAddRow: (categoryId: string) => void;
   onDeleteCategory: (categoryId: string) => void;
   onDeleteRow: (id: string) => void;
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
+  onCellTab: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
 }
 
@@ -56,12 +58,14 @@ function areBudgetSpreadsheetPropsEqual(
   if (prev.missingCategories !== next.missingCategories) return false;
   if (prev.editingCell !== next.editingCell) return false;
   if (prev.isLocked !== next.isLocked) return false;
+  if (prev.isBillingTypeLocked !== next.isBillingTypeLocked) return false;
   if (prev.onToggleCategory !== next.onToggleCategory) return false;
   if (prev.onAddRow !== next.onAddRow) return false;
   if (prev.onDeleteCategory !== next.onDeleteCategory) return false;
   if (prev.onDeleteRow !== next.onDeleteRow) return false;
   if (prev.onCellClick !== next.onCellClick) return false;
   if (prev.onCellBlur !== next.onCellBlur) return false;
+  if (prev.onCellTab !== next.onCellTab) return false;
   if (prev.onUpdate !== next.onUpdate) return false;
   if (prev.profitabilityCategoryMap !== next.profitabilityCategoryMap) return false;
   return true;
@@ -76,30 +80,35 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
   editingCell,
   profitabilityCategoryMap,
   isLocked = false,
+  isBillingTypeLocked = false,
   onToggleCategory,
   onAddRow,
   onDeleteCategory,
   onDeleteRow,
   onCellClick,
   onCellBlur,
+  onCellTab,
   onUpdate,
 }: BudgetSpreadsheetProps) {
   const sectionProps = useMemo(() => ({
     editingCell: isLocked ? null : editingCell,
     isLocked,
+    isBillingTypeLocked,
     onToggle: onToggleCategory,
     onAddRow: isLocked ? noop : onAddRow,
     onDeleteCategory: isLocked ? noop : onDeleteCategory,
     onDeleteRow: isLocked ? noop : onDeleteRow,
     onCellClick: isLocked ? noop : onCellClick,
     onCellBlur,
+    onCellTab: isLocked ? noop : onCellTab,
     onUpdate: isLocked ? noop : onUpdate,
-  }), [isLocked, editingCell, onToggleCategory, onAddRow, onDeleteCategory, onDeleteRow, onCellClick, onCellBlur, onUpdate]);
+  }), [isLocked, isBillingTypeLocked, editingCell, onToggleCategory, onAddRow, onDeleteCategory, onDeleteRow, onCellClick, onCellBlur, onCellTab, onUpdate]);
 
   return (
-    <div className="flex-1 min-h-0 p-6 overflow-y-auto">
+    <div className="flex-1 min-h-0 flex flex-col p-6">
+      <div className="flex-1 min-h-0 overflow-auto space-y-6">
       {/* Primary Budget Table */}
-      <div className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-x-auto relative">
+      <div className="border border-slate-200 rounded-xl shadow-sm bg-white">
         <table className="w-full text-sm text-left border-collapse min-w-[2300px]">
           <thead className="text-xs uppercase bg-slate-100 text-slate-600 sticky top-0 z-20 shadow-sm shadow-slate-200 divide-x divide-slate-200">
             <tr className="border-b border-slate-200">
@@ -148,7 +157,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Fornecedor</th>
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% BV</th>
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF BV</th>
-              <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">R$ BV</th>
+              <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">BV</th>
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF Over</th>
               <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">Over</th>
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Real</th>
@@ -175,7 +184,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
       </div>
 
       {/* Internal Services Table */}
-      <div className="mt-6 shrink-0 border border-slate-200 rounded-xl shadow-sm bg-white overflow-auto relative">
+      <div className="shrink-0 border border-slate-200 rounded-xl shadow-sm bg-white">
         <table className="w-full text-sm text-left border-collapse min-w-[2300px]">
           <thead className="text-xs uppercase bg-slate-100 text-slate-600 sticky top-0 z-20 shadow-sm shadow-slate-200 divide-x divide-slate-200">
             <tr className="border-b border-slate-200">
@@ -224,7 +233,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Fornecedor</th>
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% BV</th>
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF BV</th>
-              <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">R$ BV</th>
+              <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">BV</th>
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF Over</th>
               <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">Over</th>
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Real</th>
@@ -252,7 +261,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
 
       {/* Add Missing Category */}
       {!isLocked && missingCategories.length > 0 && (
-        <div className="mt-8 flex flex-col items-center justify-center bg-white border border-dashed border-slate-300 rounded-xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center bg-white border border-dashed border-slate-300 rounded-xl p-8 shadow-sm">
           <div className="text-slate-500 font-medium mb-3">Deseja adicionar uma categoria ausente?</div>
           <div className="relative">
             <select
@@ -280,6 +289,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }, areBudgetSpreadsheetPropsEqual);

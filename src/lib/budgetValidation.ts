@@ -1,8 +1,11 @@
 import { Budget, BudgetItem } from "@/src/types";
 
+import { isQuantityOrDaysMissing } from "@/src/lib/budgetSpreadsheetNavigation";
+
 export interface IBudgetValidationResult {
   missingFields: string[];
   inconsistentItems: BudgetItem[];
+  itemsMissingQtyOrDays: BudgetItem[];
 }
 
 export function validateBudget(budget: Budget): IBudgetValidationResult {
@@ -15,5 +18,7 @@ export function validateBudget(budget: Budget): IBudgetValidationResult {
     (item) => (item.unitPrice > 0 || item.total > 0) && !item.billingType,
   );
 
-  return { missingFields, inconsistentItems };
+  const itemsMissingQtyOrDays = budget.items.filter(isQuantityOrDaysMissing);
+
+  return { missingFields, inconsistentItems, itemsMissingQtyOrDays };
 }

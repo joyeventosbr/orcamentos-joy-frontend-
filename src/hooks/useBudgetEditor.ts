@@ -6,6 +6,7 @@ import {
   mapBudgetToUpdateRequest,
   mapDetailToBudget,
   mapLineToItem,
+  serializeBudgetForDirtyCheck,
 } from "@/src/api/budgets/budgets.mappers";
 import { budgetsReq } from "@/src/api/budgets/budgets.req";
 import { categoriesKeys } from "@/src/api/categories/categories.keys";
@@ -17,8 +18,9 @@ import { ProfitabilityCategory, useProfitabilitySummary } from "@/src/hooks/useP
 import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from "@/src/lib/budgetFactory";
 import { buildStableGroupedItems } from "@/src/lib/budgetGroupedItems";
 import { IBudgetValidationResult, validateBudget } from "@/src/lib/budgetValidation";
+import { isBudgetApproved } from "@/src/lib/budgetStatus";
 import { buildStableProfitabilityCategoryMap } from "@/src/lib/stableProfitabilityMap";
-import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage } from "@/src/types";
+import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage, isInternalServiceCategory } from "@/src/types";
 import { BulkUpdateBudgetLinesRequest, UpdateBudgetRequest } from "@/src/types/api.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -44,6 +46,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
   // IDs das linhas que vieram do backend (para diff no save)
   const originalLineIdsRef = useRef<Set<string>>(new Set());
+  const savedSnapshotRef = useRef("");
   const groupedItemsRef = useRef<Record<string, BudgetItem[]>>({});
   const profitabilityCategoryMapRef = useRef<Map<string, ProfitabilityCategory>>(new Map());
 
@@ -52,18 +55,26 @@ export function useBudgetEditor(budgetId: string | undefined) {
   useEffect(() => {
     if (!budgetDetail) return;
     const items = budgetDetail.lines.map(mapLineToItem);
-    setBudget({
+    const nextBudget = {
       ...mapDetailToBudget(budgetDetail),
       items,
       totalValue: recalculateBudgetTotal(items),
-    });
+    };
+    setBudget(nextBudget);
     originalLineIdsRef.current = new Set(budgetDetail.lines.map((l) => l.id));
+    savedSnapshotRef.current = serializeBudgetForDirtyCheck(nextBudget);
     groupedItemsRef.current = {};
     profitabilityCategoryMapRef.current = new Map();
   }, [budgetDetail]);
 
   const isLoading = budgetLoading || categoriesLoading;
   const isLocked = budget ? !budget.isEditable : false;
+  const isBillingTypeLocked = budget ? isBudgetApproved(budget.status) : false;
+
+  const isDirty = useMemo(() => {
+    if (!budget || isLocked) return false;
+    return serializeBudgetForDirtyCheck(budget) !== savedSnapshotRef.current;
+  }, [budget, isLocked]);
 
   // Categorias dinâmicas da API; fallback para o catálogo estático enquanto carrega
   const categories = useMemo<BudgetCategory[]>(() => {
@@ -133,11 +144,13 @@ export function useBudgetEditor(budgetId: string | undefined) {
   const updateItem = useCallback(
     (id: string, field: keyof BudgetItem, value: string | number) => {
       if (isLocked) return;
+      if (field === "billingType" && isBillingTypeLocked) return;
       startTransition(() => {
         setBudget((prev) => {
           if (!prev) return prev;
           const newItems = prev.items.map((item) => {
             if (item.id !== id) return item;
+            if (field === "billingType" && isInternalServiceCategory(item.categoryId)) return item;
             const updated = { ...item, [field]: value };
             if (field === "quantity" || field === "days" || field === "unitPrice") {
               return recalculateBudgetItemTotal(updated);
@@ -148,7 +161,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
         });
       });
     },
-    [isLocked],
+    [isLocked, isBillingTypeLocked],
   );
 
   const addRow = useCallback(
@@ -216,7 +229,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
   );
 
   const runValidation = useCallback((): IBudgetValidationResult => {
-    if (!budget) return { missingFields: [], inconsistentItems: [] };
+    if (!budget) return { missingFields: [], inconsistentItems: [], itemsMissingQtyOrDays: [] };
     return validateBudget(budget);
   }, [budget]);
 
@@ -230,14 +243,23 @@ export function useBudgetEditor(budgetId: string | undefined) {
     mutationFn: (body: BulkUpdateBudgetLinesRequest) => budgetLinesReq.bulkUpdate(body),
   });
 
+  const isSavingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const saveBudget = useCallback(
     async (headerOverrides?: Partial<Budget>): Promise<boolean> => {
+      if (isSavingRef.current) return false;
+
       const budgetToSave = budget && headerOverrides ? { ...budget, ...headerOverrides } : budget;
       if (!budgetToSave || !budgetId) return false;
 
-      const { missingFields, inconsistentItems } = validateBudget(budgetToSave);
+      const { missingFields, inconsistentItems, itemsMissingQtyOrDays } = validateBudget(budgetToSave);
       if (missingFields.length > 0) {
         toast.error(`Preencha os campos obrigatórios: ${missingFields.join(", ")}`);
+        return false;
+      }
+      if (itemsMissingQtyOrDays.length > 0) {
+        toast.error(`${itemsMissingQtyOrDays.length} item(ns) com Qtd ou Diárias não preenchidos`);
         return false;
       }
       if (inconsistentItems.length > 0) {
@@ -245,36 +267,46 @@ export function useBudgetEditor(budgetId: string | undefined) {
         return false;
       }
 
-      if (headerOverrides && budget) {
-        setBudget(budgetToSave);
+      isSavingRef.current = true;
+      setIsSaving(true);
+
+      try {
+        if (headerOverrides && budget) {
+          setBudget(budgetToSave);
+        }
+
+        await updateBudgetMutation.mutateAsync({
+          id: budgetId,
+          body: mapBudgetToUpdateRequest(budgetToSave),
+        });
+
+        const bulk = buildBulkRequest(budgetToSave.items, originalLineIdsRef.current, budgetId);
+        if (bulk.create?.length || bulk.update?.length || bulk.delete?.length) {
+          const savedLines = await bulkUpdateMutation.mutateAsync(bulk);
+          const newlyCreatedIds = savedLines.map((l) => l.id);
+          const survivingOriginalIds = [...originalLineIdsRef.current].filter((id) => !bulk.delete?.includes(id));
+          originalLineIdsRef.current = new Set([...survivingOriginalIds, ...newlyCreatedIds]);
+        }
+
+        await refreshBudgetCaches(queryClient, budgetId);
+        const detail = await fetchBudgetDetailFresh(queryClient, budgetId);
+
+        const items = detail.lines.map(mapLineToItem);
+        const refreshedBudget = {
+          ...mapDetailToBudget(detail),
+          items,
+          totalValue: recalculateBudgetTotal(items),
+        };
+        setBudget(refreshedBudget);
+        originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
+        savedSnapshotRef.current = serializeBudgetForDirtyCheck(refreshedBudget);
+
+        toast.success("Orçamento salvo com sucesso!");
+        return true;
+      } finally {
+        isSavingRef.current = false;
+        setIsSaving(false);
       }
-
-      await updateBudgetMutation.mutateAsync({
-        id: budgetId,
-        body: mapBudgetToUpdateRequest(budgetToSave),
-      });
-
-      const bulk = buildBulkRequest(budgetToSave.items, originalLineIdsRef.current, budgetId);
-      if (bulk.create?.length || bulk.update?.length || bulk.delete?.length) {
-        const savedLines = await bulkUpdateMutation.mutateAsync(bulk);
-        const newlyCreatedIds = savedLines.map((l) => l.id);
-        const survivingOriginalIds = [...originalLineIdsRef.current].filter((id) => !bulk.delete?.includes(id));
-        originalLineIdsRef.current = new Set([...survivingOriginalIds, ...newlyCreatedIds]);
-      }
-
-      await refreshBudgetCaches(queryClient, budgetId);
-      const detail = await fetchBudgetDetailFresh(queryClient, budgetId);
-
-      const items = detail.lines.map(mapLineToItem);
-      setBudget({
-        ...mapDetailToBudget(detail),
-        items,
-        totalValue: recalculateBudgetTotal(items),
-      });
-      originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
-
-      toast.success("Orçamento salvo com sucesso!");
-      return true;
     },
     [budget, budgetId, updateBudgetMutation, bulkUpdateMutation, queryClient],
   );
@@ -294,12 +326,14 @@ export function useBudgetEditor(budgetId: string | undefined) {
     const detail = await fetchBudgetDetailFresh(queryClient, budgetId);
 
     const items = detail.lines.map(mapLineToItem);
-    setBudget({
+    const refreshedBudget = {
       ...mapDetailToBudget(detail),
       items,
       totalValue: recalculateBudgetTotal(items),
-    });
+    };
+    setBudget(refreshedBudget);
     originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
+    savedSnapshotRef.current = serializeBudgetForDirtyCheck(refreshedBudget);
 
     const countLabel = created.length === 2 ? "2 versões" : "1 versão";
     toast.success(`Aprovação concluída. ${countLabel} criada(s) na pasta.`);
@@ -307,8 +341,12 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
   return {
     budget,
+    budgetDetail,
     isLoading,
     isLocked,
+    isBillingTypeLocked,
+    isDirty,
+    isSaving,
     budgetItems,
     categories,
     primaryBudgetItems,

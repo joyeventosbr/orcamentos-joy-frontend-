@@ -9,6 +9,7 @@ import {
   getStatusBadgeVariant,
   shouldShowBudgetVersion,
 } from "@/src/lib/budgetStatus";
+import { DashboardReturnState, buildDashboardReturnState } from "@/src/lib/dashboardNavigation";
 import { ApiBudget } from "@/src/types/api.types";
 import { format } from "date-fns";
 import { Calendar, Copy, FileText, MoreHorizontal, Search, Trash2, UserRound } from "lucide-react";
@@ -17,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 interface BudgetsViewProps {
   budgets: ApiBudget[];
   viewMode: "grid" | "table";
+  dashboardReturnState: DashboardReturnState;
   onDuplicate: (budgetId: string) => void;
   onDelete: (budget: ApiBudget) => void;
   duplicatingBudgetId?: string | null;
@@ -96,6 +98,7 @@ function getBudgetDisplayDate(budget: ApiBudget): string {
 export function BudgetsView({
   budgets,
   viewMode,
+  dashboardReturnState,
   onDuplicate,
   onDelete,
   duplicatingBudgetId = null,
@@ -103,6 +106,15 @@ export function BudgetsView({
   onClearFilters,
 }: BudgetsViewProps) {
   const navigate = useNavigate();
+
+  const openBudget = (budget: ApiBudget) => {
+    navigate(`/editor/${budget.id}`, {
+      state: buildDashboardReturnState({
+        ...dashboardReturnState,
+        status: budget.status,
+      }),
+    });
+  };
   const { canViewEditHistory } = usePermissions();
 
   if (budgets.length === 0) {
@@ -129,7 +141,7 @@ export function BudgetsView({
           <Card
             key={budget.id}
             className="group hover:border-brand-primary/30 hover:shadow-md transition-all cursor-pointer flex flex-col"
-            onClick={() => navigate(`/editor/${budget.id}`)}
+            onClick={() => openBudget(budget)}
           >
             <CardContent className="p-6 flex-1 flex flex-col">
               <div className="flex justify-between items-start mb-4">
@@ -204,7 +216,7 @@ export function BudgetsView({
             <tr
               key={budget.id}
               className="hover:bg-gray-50/50 transition-colors cursor-pointer group"
-              onClick={() => navigate(`/editor/${budget.id}`)}
+              onClick={() => openBudget(budget)}
             >
               <td className="px-6 py-4 font-medium text-gray-900">
                 {budget.name}

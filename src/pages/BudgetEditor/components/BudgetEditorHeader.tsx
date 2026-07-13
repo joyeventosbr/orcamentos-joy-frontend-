@@ -18,9 +18,14 @@ import {
   Save,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 
 type HeaderDraftFields = Pick<Budget, "name" | "client" | "job" | "location" | "date" | "participants">;
+
+export interface BudgetEditorHeaderHandle {
+  getPendingUpdates: () => Partial<HeaderDraftFields>;
+  hasPendingUpdates: () => boolean;
+}
 
 function budgetToDraft(budget: Budget): HeaderDraftFields {
   return {
@@ -37,6 +42,7 @@ interface BudgetEditorHeaderProps {
   budget: Budget;
   activeSidebar: "summary" | "profitability" | null;
   isLocked: boolean;
+  isSaving?: boolean;
   onBudgetChange: (updates: Partial<Budget>) => void;
   onToggleSidebar: () => void;
   onToggleProfitability: () => void;
@@ -44,20 +50,26 @@ interface BudgetEditorHeaderProps {
   onNavigateBack: () => void;
   onExportExcel: (variant: ExcelExportVariant) => void;
   onApprove?: () => void;
+  onPendingHeaderChange?: (hasPending: boolean) => void;
 }
 
-export function BudgetEditorHeader({
-  budget,
-  activeSidebar,
-  isLocked,
-  onBudgetChange,
-  onToggleSidebar,
-  onToggleProfitability,
-  onSave,
-  onNavigateBack,
-  onExportExcel,
-  onApprove,
-}: BudgetEditorHeaderProps) {
+export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEditorHeaderProps>(function BudgetEditorHeader(
+  {
+    budget,
+    activeSidebar,
+    isLocked,
+    isSaving = false,
+    onBudgetChange,
+    onToggleSidebar,
+    onToggleProfitability,
+    onSave,
+    onNavigateBack,
+    onExportExcel,
+    onApprove,
+    onPendingHeaderChange,
+  },
+  ref,
+) {
   const [draft, setDraft] = useState(() => budgetToDraft(budget));
   const isEditingRef = useRef(false);
 
@@ -75,6 +87,15 @@ export function BudgetEditorHeader({
     });
     return updates;
   };
+
+  useImperativeHandle(ref, () => ({
+    getPendingUpdates: collectPendingUpdates,
+    hasPendingUpdates: () => Object.keys(collectPendingUpdates()).length > 0,
+  }));
+
+  useEffect(() => {
+    onPendingHeaderChange?.(Object.keys(collectPendingUpdates()).length > 0);
+  }, [draft, budget, onPendingHeaderChange]);
 
   const syncFieldOnBlur = (field: keyof HeaderDraftFields) => {
     isEditingRef.current = false;
@@ -103,16 +124,16 @@ export function BudgetEditorHeader({
 
   return (
     <header className="flex flex-col border-b border-gray-200 bg-white flex-shrink-0">
-      <div className="h-16 flex items-center justify-between px-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
+        <div className="flex items-center gap-4 min-w-0">
           <button
             onClick={onNavigateBack}
-            className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
-          <div>
-            <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
               <input
                 type="text"
                 value={draft.name}
@@ -122,7 +143,7 @@ export function BudgetEditorHeader({
                 }}
                 onBlur={() => syncFieldOnBlur("name")}
                 disabled={isLocked}
-                className={`text-lg font-semibold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-brand-primary rounded px-1 -ml-1 transition-all w-80 ${
+                className={`text-lg font-semibold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-brand-primary rounded px-1 -ml-1 transition-all w-full min-w-[8rem] max-w-80 ${
                   isLocked ? "cursor-default opacity-75" : "hover:bg-gray-50"
                 }`}
               />
@@ -143,7 +164,7 @@ export function BudgetEditorHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 justify-end">
           <Button
             variant={activeSidebar === "profitability" ? "default" : "outline"}
             onClick={onToggleProfitability}
@@ -188,6 +209,7 @@ export function BudgetEditorHeader({
             <Button
               variant="outline"
               onClick={onApprove}
+              disabled={isSaving}
               className="gap-2 text-gray-900 border-gray-300 hover:bg-gray-100"
             >
               <CheckCircle size={16} />
@@ -195,9 +217,13 @@ export function BudgetEditorHeader({
             </Button>
           )}
           {!isLocked && (
-            <Button onClick={handleSave} className="gap-2 bg-black hover:bg-gray-800 text-white border-black">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="gap-2 bg-black hover:bg-gray-800 text-white border-black"
+            >
               <Save size={16} />
-              Salvar
+              {isSaving ? "Salvando..." : "Salvar"}
             </Button>
           )}
         </div>
@@ -343,4 +369,4 @@ export function BudgetEditorHeader({
       </div>
     </header>
   );
-}
+});

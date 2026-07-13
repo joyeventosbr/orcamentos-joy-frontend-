@@ -185,7 +185,7 @@ export function ProfitabilitySidebar({ isOpen, summary }: ProfitabilitySidebarPr
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Resumo Geral</h4>
               <div className="divide-y divide-gray-100">
                 <MetricLine label="Valor Fornecedores" value={summary.grandTotals.valorFornecedor} />
-                <MetricLine label="R$ BV Total" value={summary.grandTotals.rsBV} />
+                <MetricLine label="BV Total" value={summary.grandTotals.rsBV} />
                 <MetricLine label="Over Total" value={summary.grandTotals.over} />
               </div>
               <div className="mt-4 pt-4 border-t-2 border-gray-200">
@@ -197,7 +197,7 @@ export function ProfitabilitySidebar({ isOpen, summary }: ProfitabilitySidebarPr
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Faturamento via JOY</h4>
               <div className="divide-y divide-gray-100">
                 <MetricLine label="Valor Fornecedores" value={summary.totalsViaJoy.valorFornecedor} />
-                <MetricLine label="R$ BV" value={summary.totalsViaJoy.rsBV} />
+                <MetricLine label="BV" value={summary.totalsViaJoy.rsBV} />
                 <MetricLine label="Over" value={summary.totalsViaJoy.over} />
               </div>
               <div className="mt-4 pt-4 border-t-2 border-gray-200">
