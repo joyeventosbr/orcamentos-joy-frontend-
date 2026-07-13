@@ -111,20 +111,26 @@ export function useBudgetEditor(budgetId: string | undefined) {
   // --- Summaries ---
 
   const billingSummary = useBudgetBillingSummary(primaryBudgetItems);
+  const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
   const honorariumPercentage = budget?.honorariumPercentage ?? 10;
+  const prazoDias = Number(budget?.deadline) || 0;
+  const antecipadoCliente = paymentScheduleSummary.totals.paymentAdvance;
+  const fatViaJoy = billingSummary.metrics.find((metric) => metric.key === "joy")?.amount ?? 0;
   const internalServicesSummary = useInternalServicesSummary(
     budgetItems,
     billingSummary.honorariumBase,
     honorariumPercentage,
+    fatViaJoy,
+    antecipadoCliente,
+    prazoDias,
   );
-  const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
   const profitabilitySummary = useProfitabilitySummary({
     primaryItems: primaryBudgetItems,
     categories: primaryBudgetCategories,
     internalItemsTotal: internalServicesSummary.internalItemsTotal,
     honorariumPercentage,
-    prazoDias: Number(budget?.deadline) || 0,
-    antecipadoCliente: paymentScheduleSummary.totals.paymentAdvance,
+    prazoDias,
+    antecipadoCliente,
   });
 
   const profitabilityCategoryMap = useMemo(() => {

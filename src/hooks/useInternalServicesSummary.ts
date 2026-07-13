@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { calculateAdministrativeTax } from "@/src/lib/profitability";
 import { BudgetItem, HonorariumPercentage } from "@/src/types";
 
 const INTERNAL_SERVICES_CATEGORY_ID = "2.1";
@@ -8,6 +9,9 @@ export function useInternalServicesSummary(
   items: BudgetItem[],
   honorariumBase: number,
   honorariumPercentage: HonorariumPercentage,
+  fatViaJoy: number,
+  antecipadoCliente: number,
+  prazoDias: number,
 ) {
   return useMemo(() => {
     const internalItemsTotal = items
@@ -16,7 +20,7 @@ export function useInternalServicesSummary(
 
     const planning = 0;
     const fees = honorariumBase * (honorariumPercentage / 100);
-    const administrativeTaxes = 0;
+    const administrativeTaxes = calculateAdministrativeTax(fatViaJoy, antecipadoCliente, prazoDias);
     const subtotal = internalItemsTotal + planning + fees + administrativeTaxes;
     const serviceTax = subtotal * SERVICE_TAX_RATE;
     const totalEvent = subtotal + serviceTax;
@@ -33,5 +37,5 @@ export function useInternalServicesSummary(
       advancePayment,
       serviceTaxRate: SERVICE_TAX_RATE,
     };
-  }, [items, honorariumBase, honorariumPercentage]);
+  }, [items, honorariumBase, honorariumPercentage, fatViaJoy, antecipadoCliente, prazoDias]);
 }
