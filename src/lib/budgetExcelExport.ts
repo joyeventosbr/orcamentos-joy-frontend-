@@ -195,9 +195,9 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
     } else {
       for (let r = base + count; r < base + slots; r++) rowsToHide.push(r); // slots vazios
     }
+    if (categoryId === "2.1") rowsToHide.push(base - 2); // antigo título da seção de serviços internos
     if (count === 0) {
       emptyCategoryRows.push(base - 1, base + slots); // faixa do título + linha separadora
-      if (categoryId === "2.1") emptyCategoryRows.push(base - 2); // título "2) Itens faturados..."
     }
   };
 
@@ -269,21 +269,17 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   const lastRow = 270 + offsetTotal;
 
   // --- 7. Enxuga: oculta slots vazios, "ITENS NÃO PREENCHIDOS", categorias sem
-  //        itens, e remove os preenchimentos vermelhos do template (nas 2 versões). ---
+  //        itens, e remove a formatação vermelha do template (nas 2 versões). ---
   for (const r of rowsToHide) ws.getRow(r).hidden = true;
   for (const r of emptyCategoryRows) ws.getRow(r).hidden = true;
-  removeRedFills(ws, lastRow);
+  removeRedFormatting(ws, lastRow);
 
   // --- 8. Bloco de texto do rodapé: quebra de linha + altura para não cortar. ---
   applyFooterTextLayout(ws, offsetTotal);
 
   // --- 9. Versão "cliente": remove a área financeira e o divisor (coluna R). ---
   if (variant === "client") {
-    for (let r = 1; r <= lastRow; r++) {
-      for (let c = FINANCEIRA_FIRST_COL; c <= FINANCEIRA_LAST_COL; c++) {
-        ws.getCell(r, c).value = null;
-      }
-    }
+    clearClientFinancialArea(ws, lastRow);
     for (let c = FINANCEIRA_FIRST_COL; c <= FINANCEIRA_LAST_COL; c++) {
       ws.getColumn(c).hidden = true;
     }
@@ -303,6 +299,21 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
     new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
     fileName,
   );
+}
+
+/**
+ * No modo cliente, a área de rentabilidade não deve manter os preenchimentos
+ * cinza nem as bordas usadas pela planilha interna.
+ */
+function clearClientFinancialArea(ws: Worksheet, lastRow: number): void {
+  for (let r = 1; r <= lastRow; r++) {
+    for (let c = FINANCEIRA_FIRST_COL; c <= FINANCEIRA_LAST_COL; c++) {
+      const cell = ws.getCell(r, c);
+      cell.value = null;
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFFFF" } };
+      cell.border = {};
+    }
+  }
 }
 
 /**
@@ -394,16 +405,21 @@ function applyTaxNfFormulas(
   setFormula(r266, COL.T_SUPPLIER_VALUE, `T${r264}/100*${taxNf}`);
 }
 
-/** Remove os preenchimentos vermelhos do template (divisor R, título financeira, ITENS NÃO PREENCHIDOS). */
-function removeRedFills(ws: Worksheet, lastRow: number): void {
+/** Remove os preenchimentos e textos vermelhos do template. */
+function removeRedFormatting(ws: Worksheet, lastRow: number): void {
   const RED_ARGB = new Set(["FFFF0000", "FFC00000"]);
   for (let r = 1; r <= lastRow; r++) {
     for (let c = 1; c <= FINANCEIRA_LAST_COL; c++) {
       const cell = ws.getCell(r, c);
       const fill = cell.fill as { type?: string; fgColor?: { argb?: string } } | undefined;
-      const argb = fill?.fgColor?.argb?.toUpperCase();
-      if (fill?.type === "pattern" && argb && RED_ARGB.has(argb)) {
+      const fillArgb = fill?.fgColor?.argb?.toUpperCase();
+      if (fill?.type === "pattern" && fillArgb && RED_ARGB.has(fillArgb)) {
         cell.fill = { type: "pattern", pattern: "none" };
+      }
+
+      const fontArgb = cell.font?.color?.argb?.toUpperCase();
+      if (fontArgb && RED_ARGB.has(fontArgb)) {
+        cell.font = { ...cell.font, color: { argb: "FF000000" } };
       }
     }
   }

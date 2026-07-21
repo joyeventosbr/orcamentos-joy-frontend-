@@ -188,14 +188,6 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
 
   return (
     <React.Fragment>
-      {category.sectionTitle && (
-        <tr className="bg-slate-200 text-slate-950">
-          <td colSpan={23} className="px-3 py-3 text-base font-black">
-            {category.sectionTitle}
-          </td>
-        </tr>
-      )}
-
       {/* Category Header Row */}
       <tr
         className={

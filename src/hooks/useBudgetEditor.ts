@@ -82,7 +82,6 @@ export function useBudgetEditor(budgetId: string | undefined) {
     return apiCategories.map((c) => ({
       id: c.code,
       name: `${c.code} - ${c.name}`,
-      sectionTitle: c.code.startsWith("2.") ? "Itens faturados via nota fiscal Joy Eventos" : undefined,
     }));
   }, [apiCategories]);
 

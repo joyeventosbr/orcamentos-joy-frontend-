@@ -22,7 +22,6 @@ export type HonorariumPercentage = (typeof HONORARIUM_PERCENTAGE_OPTIONS)[number
 export interface BudgetCategory {
   id: string;
   name: string;
-  sectionTitle?: string;
 }
 
 export const BUDGET_CATEGORIES: BudgetCategory[] = [
@@ -38,11 +37,7 @@ export const BUDGET_CATEGORIES: BudgetCategory[] = [
   { id: "1.10", name: "1.10 - Taxas e licenças" },
   { id: "1.11", name: "1.11 - Diversos" },
   { id: "1.12", name: "1.12 - Extras" },
-  {
-    id: "2.1",
-    name: "2 - Serviços internos",
-    sectionTitle: "Itens faturados via nota fiscal Joy Eventos",
-  },
+  { id: "2.1", name: "2 - Serviços internos" },
 ];
 
 export interface BudgetItem {

@@ -92,7 +92,7 @@ export function InternalServicesSummaryCard({
           </div>
         </div>
         <SummaryLine label="Taxas administrativas" value={administrativeTaxes} />
-        <SummaryLine label="Subtotal 2: itens faturados via nota fiscal Joy Eventos" value={subtotal} />
+        <SummaryLine label="Subtotal: serviços internos" value={subtotal} />
         <SummaryLine label="Imposto NF Serviços Joy" value={serviceTax} />
       </div>
 
