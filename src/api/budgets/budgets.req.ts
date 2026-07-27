@@ -18,5 +18,8 @@ export const budgetsReq = {
   approve: (id: string) =>
     apiClient.patch<ApiBudget[]>(API_ENDPOINTS.budgets.approve(id)).then((r) => r.data),
 
+  approveToProduction: (id: string) =>
+    apiClient.patch<ApiBudget>(API_ENDPOINTS.budgets.approveToProduction(id)).then((r) => r.data),
+
   copy: (id: string) => apiClient.post<ApiBudget>(API_ENDPOINTS.budgets.copy(id)).then((r) => r.data),
 };

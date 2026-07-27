@@ -26,6 +26,19 @@ export function canApproveBudget(status: BudgetStatus): boolean {
   return status === BudgetStatus.Concorrencia || status === BudgetStatus.Producao;
 }
 
+/** Admin only: orçamento raiz inicial em Concorrência (sem parent). Filhos são validados no backend. */
+export function canApproveToProduction(
+  budget: Pick<ApiBudget, "status" | "version" | "parentId">,
+  isAdmin: boolean,
+): boolean {
+  return (
+    isAdmin &&
+    budget.status === BudgetStatus.Concorrencia &&
+    budget.version === 0 &&
+    budget.parentId === null
+  );
+}
+
 export function isBudgetApproved(status: BudgetStatus): boolean {
   return status === BudgetStatus.AprovadoConcorrencia || status === BudgetStatus.AprovadoProducao;
 }

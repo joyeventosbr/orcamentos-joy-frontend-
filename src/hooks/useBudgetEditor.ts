@@ -320,6 +320,10 @@ export function useBudgetEditor(budgetId: string | undefined) {
     mutationFn: () => budgetsReq.approve(budgetId!),
   });
 
+  const approveToProductionMutation = useMutation({
+    mutationFn: () => budgetsReq.approveToProduction(budgetId!),
+  });
+
   const handleApprove = useCallback(async (): Promise<void> => {
     if (!budget || !budgetId) return;
     const saved = await saveBudget();
@@ -343,6 +347,18 @@ export function useBudgetEditor(budgetId: string | undefined) {
     const countLabel = created.length === 2 ? "2 versões" : "1 versão";
     toast.success(`Aprovação concluída. ${countLabel} criada(s) na pasta.`);
   }, [budget, budgetId, saveBudget, approveMutation, queryClient]);
+
+  const handleApproveToProduction = useCallback(async (): Promise<string> => {
+    if (!budget || !budgetId) throw new Error("Orçamento não encontrado.");
+    const saved = await saveBudget();
+    if (!saved) throw new Error("Falha ao salvar antes de aprovar.");
+
+    const created = await approveToProductionMutation.mutateAsync();
+
+    await refreshBudgetCaches(queryClient, budgetId);
+    toast.success("Orçamento enviado para Produção.");
+    return created.id;
+  }, [budget, budgetId, saveBudget, approveToProductionMutation, queryClient]);
 
   return {
     budget,
@@ -375,5 +391,6 @@ export function useBudgetEditor(budgetId: string | undefined) {
     runValidation,
     saveBudget,
     handleApprove,
+    handleApproveToProduction,
   };
 }

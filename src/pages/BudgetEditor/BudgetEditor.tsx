@@ -1,4 +1,5 @@
 import { PageLoader } from "@/src/components/ui/PageLoader/PageLoader";
+import { usePermissions } from "@/src/hooks/use-permissions";
 import { ExcelExportVariant, exportBudgetToExcel } from "@/src/lib/budgetExcelExport";
 import { getNextTabCell } from "@/src/lib/budgetSpreadsheetNavigation";
 import { buildDashboardReturnState, DashboardReturnState } from "@/src/lib/dashboardNavigation";
@@ -11,6 +12,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { BudgetEditorSidebars } from "./BudgetEditorSidebars";
 import { BudgetEditorSpreadsheetArea } from "./BudgetEditorSpreadsheetArea";
 import { ApprovalConfirmModal } from "./components/ApprovalConfirmModal";
+import { ApproveToProductionConfirmModal } from "./components/ApproveToProductionConfirmModal";
 import { BudgetEditorHeader, BudgetEditorHeaderHandle } from "./components/BudgetEditorHeader";
 import { DeleteCategoryModal } from "./components/DeleteCategoryModal";
 import { LeaveConfirmModal } from "./components/LeaveConfirmModal";
@@ -20,6 +22,7 @@ export function BudgetEditor() {
   const location = useLocation();
   const { budgetId } = useParams<{ budgetId: string }>();
   const headerRef = useRef<BudgetEditorHeaderHandle>(null);
+  const { isAdmin } = usePermissions();
 
   const editor = useBudgetEditor(budgetId);
 
@@ -51,6 +54,9 @@ export function BudgetEditor() {
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [showApproveToProductionModal, setShowApproveToProductionModal] = useState(false);
+  const [approveToProductionError, setApproveToProductionError] = useState<string | null>(null);
+  const [isApprovingToProduction, setIsApprovingToProduction] = useState(false);
   const [hasPendingHeaderChanges, setHasPendingHeaderChanges] = useState(false);
 
   const hasUnsavedChanges = editor.isDirty || hasPendingHeaderChanges;
@@ -163,6 +169,24 @@ export function BudgetEditor() {
     setShowApprovalModal(true);
   }, [editor.runValidation]);
 
+  const handleOpenApproveToProductionModal = useCallback(() => {
+    const { missingFields, inconsistentItems, itemsMissingQtyOrDays } = editor.runValidation();
+    if (missingFields.length > 0) {
+      toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
+      return;
+    }
+    if (itemsMissingQtyOrDays.length > 0) {
+      toast.error(`Corrija ${itemsMissingQtyOrDays.length} item(ns) com Qtd ou Diárias não preenchidos antes de aprovar`);
+      return;
+    }
+    if (inconsistentItems.length > 0) {
+      toast.error(`Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`);
+      return;
+    }
+    setApproveToProductionError(null);
+    setShowApproveToProductionModal(true);
+  }, [editor.runValidation]);
+
   const toggleSummarySidebar = useCallback(() => {
     setActiveSidebar((current) => (current === "summary" ? null : "summary"));
   }, []);
@@ -250,6 +274,21 @@ export function BudgetEditor() {
     }
   }, [editor.handleApprove]);
 
+  const handleApproveToProductionConfirm = useCallback(async () => {
+    setIsApprovingToProduction(true);
+    try {
+      const createdId = await editor.handleApproveToProduction();
+      setShowApproveToProductionModal(false);
+      setApproveToProductionError(null);
+      navigate(`/editor/${createdId}`, { replace: true, state: location.state });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao aprovar para produção.";
+      setApproveToProductionError(message);
+    } finally {
+      setIsApprovingToProduction(false);
+    }
+  }, [editor.handleApproveToProduction, navigate, location.state]);
+
   const handleExportExcel = useCallback(
     async (variant: ExcelExportVariant) => {
       if (!editor.budget) return;
@@ -282,6 +321,8 @@ export function BudgetEditor() {
         onNavigateBack={() => leaveGuard.requestLeave(navigateBackToFolder)}
         onExportExcel={handleExportExcel}
         onApprove={handleOpenApprovalModal}
+        onApproveToProduction={isAdmin ? handleOpenApproveToProductionModal : undefined}
+        isAdmin={isAdmin}
         onPendingHeaderChange={setHasPendingHeaderChanges}
       />
 
@@ -302,6 +343,20 @@ export function BudgetEditor() {
           onCancel={() => {
             setShowApprovalModal(false);
             setApprovalError(null);
+          }}
+        />
+      )}
+
+      {showApproveToProductionModal && editor.budget && (
+        <ApproveToProductionConfirmModal
+          budget={editor.budget}
+          error={approveToProductionError}
+          isLoading={isApprovingToProduction}
+          onConfirm={() => void handleApproveToProductionConfirm()}
+          onCancel={() => {
+            if (isApprovingToProduction) return;
+            setShowApproveToProductionModal(false);
+            setApproveToProductionError(null);
           }}
         />
       )}

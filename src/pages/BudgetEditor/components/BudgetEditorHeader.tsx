@@ -2,6 +2,7 @@ import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
 import {
   canApproveBudget,
+  canApproveToProduction,
   getBudgetDisplayStatus,
   getStatusBadgeVariant,
   shouldShowBudgetVersion,
@@ -12,6 +13,7 @@ import {
   ArrowLeft,
   CheckCircle,
   Download,
+  Factory,
   FileSpreadsheet,
   LayoutTemplate,
   Lock,
@@ -50,6 +52,8 @@ interface BudgetEditorHeaderProps {
   onNavigateBack: () => void;
   onExportExcel: (variant: ExcelExportVariant) => void;
   onApprove?: () => void;
+  onApproveToProduction?: () => void;
+  isAdmin?: boolean;
   onPendingHeaderChange?: (hasPending: boolean) => void;
 }
 
@@ -66,6 +70,8 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
     onNavigateBack,
     onExportExcel,
     onApprove,
+    onApproveToProduction,
+    isAdmin = false,
     onPendingHeaderChange,
   },
   ref,
@@ -117,6 +123,8 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
 
   const displayStatus = getBudgetDisplayStatus(budget);
   const showApprove = !isLocked && onApprove && canApproveBudget(budget.status);
+  const showApproveToProduction =
+    !isLocked && onApproveToProduction && canApproveToProduction(budget, isAdmin);
 
   const isClientEmpty = !isLocked && !draft.client.trim();
   const isJobEmpty = !isLocked && !draft.job.trim();
@@ -205,6 +213,17 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
               </div>
             </div>
           </div>
+          {showApproveToProduction && (
+            <Button
+              variant="outline"
+              onClick={onApproveToProduction}
+              disabled={isSaving}
+              className="gap-2 text-gray-900 border-gray-300 hover:bg-gray-100"
+            >
+              <Factory size={16} />
+              Enviar para Produção
+            </Button>
+          )}
           {showApprove && (
             <Button
               variant="outline"

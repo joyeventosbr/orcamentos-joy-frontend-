@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
     update: (id: string) => `/budgets/${id}`,
     delete: (id: string) => `/budgets/${id}`,
     approve: (id: string) => `/budgets/${id}/approve`,
+    approveToProduction: (id: string) => `/budgets/${id}/approve-to-production`,
     copy: (id: string) => `/budgets/${id}/copy`,
     export: (id: string) => `/budgets/${id}/export`,
   },
