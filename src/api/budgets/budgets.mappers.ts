@@ -32,6 +32,20 @@ function emptyToUndefined(value?: string): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
+/** Normaliza nfReceived da API; valores legados "true"/"false" viram null. */
+function normalizeNfReceived(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  if (trimmed === "" || trimmed === "true" || trimmed === "false") return null;
+  return trimmed;
+}
+
+function toApiNfReceived(value: string | null): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 export function mapDetailToBudget(detail: BudgetDetail): Budget {
   return {
     id: detail.id,
@@ -82,7 +96,7 @@ export function mapLineToItem(line: BudgetLine): BudgetItem {
     percentBV: line.percentBv ?? 0,
     percentNfBV: line.percentNfBv ?? undefined,
     percentNfOver: line.percentNfOver ?? 0,
-    nfReceived: line.nfReceived ?? false,
+    nfReceived: normalizeNfReceived(line.nfReceived),
   };
 }
 
@@ -103,7 +117,7 @@ function mapItemProfitabilityToApi(item: BudgetItem) {
     percentBv: item.percentBV,
     percentNfBv: item.percentNfBV ?? null,
     percentNfOver: item.percentNfOver,
-    nfReceived: item.nfReceived,
+    nfReceived: toApiNfReceived(item.nfReceived),
   };
 }
 

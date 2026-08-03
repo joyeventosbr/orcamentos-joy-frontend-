@@ -174,7 +174,7 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
   // --- Item actions ---
 
   const updateItem = useCallback(
-    (id: string, field: keyof BudgetItem, value: string | number | boolean) => {
+    (id: string, field: keyof BudgetItem, value: string | number | null) => {
       if (isLocked) return;
       if (field === "billingType" && isBillingTypeLocked) return;
       startTransition(() => {

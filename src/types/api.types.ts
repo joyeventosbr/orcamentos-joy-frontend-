@@ -167,7 +167,7 @@ export interface BudgetLine {
   percentBv: number | null;
   percentNfBv: number | null;
   percentNfOver: number | null;
-  nfReceived: boolean;
+  nfReceived: string | null;
 }
 
 export interface CreateBudgetLineRequest {
@@ -195,7 +195,7 @@ export interface CreateBudgetLineRequest {
   percentBv?: number | null;
   percentNfBv?: number | null;
   percentNfOver?: number | null;
-  nfReceived?: boolean;
+  nfReceived?: string | null;
 }
 
 export interface UpdateBudgetLineRequest {
@@ -222,7 +222,7 @@ export interface UpdateBudgetLineRequest {
   percentBv?: number | null;
   percentNfBv?: number | null;
   percentNfOver?: number | null;
-  nfReceived?: boolean;
+  nfReceived?: string | null;
 }
 
 export interface BulkUpdateBudgetLinesRequest {

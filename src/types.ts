@@ -63,7 +63,7 @@ export interface BudgetItem {
   /** % NF sobre BV; se omitido, usa % BV em itens VIA NF */
   percentNfBV?: number;
   percentNfOver: number;
-  nfReceived: boolean;
+  nfReceived: string | null;
 }
 
 export interface Budget {
@@ -93,7 +93,7 @@ export interface Budget {
   taxNf: number;
 }
 
-export type TBudgetItemUpdater = (id: string, field: keyof BudgetItem, value: string | number | boolean) => void;
+export type TBudgetItemUpdater = (id: string, field: keyof BudgetItem, value: string | number | null) => void;
 
 export function getBudgetFolder(budget: Budget): BudgetFolder {
   return getBudgetFolderTab(budget.status);

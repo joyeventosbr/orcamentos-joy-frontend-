@@ -1,4 +1,3 @@
-import { Badge } from "@/src/components/ui/Badge/Badge";
 import { formatCurrencyBRL } from "@/src/lib/formatters";
 import { resolvePercentNfBV } from "@/src/lib/profitability";
 import { BILLING_TYPE_OPTIONS, BudgetItem, isInternalServiceCategory, TBudgetItemUpdater } from "@/src/types";
@@ -243,40 +242,61 @@ function NfReceivedCell({
   onUpdate: TBudgetItemUpdater;
   onTab: () => void;
 }) {
+  const [draft, setDraft] = useState(item.nfReceived ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraft(item.nfReceived ?? "");
+  }, [item.nfReceived]);
 
   useEffect(() => {
     if (isFocused) {
       inputRef.current?.focus();
+      inputRef.current?.select();
     }
   }, [isFocused]);
+
+  const commit = (raw: string) => {
+    const trimmed = raw.trim();
+    const next = trimmed === "" ? null : trimmed;
+    if (next !== item.nfReceived) {
+      onUpdate(item.id, "nfReceived", next);
+    }
+  };
 
   if (isLocked) {
     return (
       <div className="h-full w-full min-h-[36px] px-2 py-2 flex items-center justify-center">
-        <Badge variant={item.nfReceived ? "success" : "neutral"} className="rounded-md">
-          {item.nfReceived ? "Sim" : "Não"}
-        </Badge>
+        <span className={`text-sm ${item.nfReceived ? "text-slate-700" : "text-gray-300 italic text-xs"}`}>
+          {item.nfReceived || "—"}
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full min-h-[36px] px-2 py-2 flex items-center justify-center">
+    <div className="h-full w-full min-h-[36px] px-1 py-1 flex items-center justify-center">
       <input
         ref={inputRef}
-        type="checkbox"
-        className="h-4 w-4 cursor-pointer accent-gray-900"
-        checked={item.nfReceived}
-        onChange={(e) => onUpdate(item.id, "nfReceived", e.target.checked)}
+        type="text"
+        className="w-full h-8 bg-white border border-gray-200 outline-none px-2 py-1 text-sm rounded text-center focus:border-gray-400 focus:ring-1 focus:ring-gray-300"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => commit(draft)}
         onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            commit(draft);
+            (e.target as HTMLInputElement).blur();
+          }
           if (e.key === "Tab") {
             e.preventDefault();
+            commit(draft);
             onTab();
           }
         }}
         title="NF recebida"
         aria-label="NF recebida"
+        placeholder="—"
       />
     </div>
   );

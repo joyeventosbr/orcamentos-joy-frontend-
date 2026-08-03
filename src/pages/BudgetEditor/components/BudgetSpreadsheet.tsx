@@ -161,7 +161,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF Over</th>
               <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">Over</th>
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Real</th>
-              <th className="px-3 py-2 min-w-[90px] text-center text-gray-800 bg-gray-100">NF recebida</th>
+              <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">NF recebida</th>
             </tr>
           </thead>
           <tbody className="divide-y text-slate-700">
@@ -238,7 +238,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF Over</th>
               <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">Over</th>
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Real</th>
-              <th className="px-3 py-2 min-w-[90px] text-center text-gray-800 bg-gray-100">NF recebida</th>
+              <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">NF recebida</th>
             </tr>
           </thead>
           <tbody className="divide-y text-slate-700">
