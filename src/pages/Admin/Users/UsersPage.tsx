@@ -35,7 +35,7 @@ export function UsersPage() {
       );
     } else {
       registerUserMutation.mutate(
-        { name: data.name, email: data.email, password: data.password, cdCliente: data.cdCliente! },
+        { name: data.name, email: data.email, password: data.password, roleDescription: data.roleDescription! },
         { onSuccess: () => onSuccess(data.name), onError },
       );
     }

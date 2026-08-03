@@ -27,7 +27,7 @@ export interface RegisterUserRequest {
   name: string;
   email: string;
   password: string;
-  cdCliente: string;
+  roleDescription: string;
 }
 
 export interface RegisterAdminRequest {
@@ -40,7 +40,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
-  cdCliente?: string;
+  roleDescription?: string;
   iat?: number;
   exp?: number;
 }

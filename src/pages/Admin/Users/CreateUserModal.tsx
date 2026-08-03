@@ -27,7 +27,7 @@ export function CreateUserModal({
     formState: { errors },
   } = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { name: "", email: "", role: "customer", cdCliente: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", role: "customer", roleDescription: "", password: "", confirmPassword: "" },
   });
 
   const role = watch("role");
@@ -73,10 +73,10 @@ export function CreateUserModal({
               <label className="text-sm font-medium text-gray-700">Função</label>
               <Input
                 placeholder="Ex: Financeiro, Contabilidade..."
-                aria-invalid={!!errors.cdCliente}
-                {...register("cdCliente")}
+                aria-invalid={!!errors.roleDescription}
+                {...register("roleDescription")}
               />
-              {errors.cdCliente && <p className="text-xs text-red-500">{errors.cdCliente.message}</p>}
+              {errors.roleDescription && <p className="text-xs text-red-500">{errors.roleDescription.message}</p>}
             </div>
           )}
 

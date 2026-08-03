@@ -5,7 +5,7 @@ export const createUserSchema = z
     name: z.string().min(3, 'Nome deve ter ao menos 3 caracteres'),
     email: z.string().email('E-mail inválido'),
     role: z.enum(['customer', 'admin']),
-    cdCliente: z.string().optional(),
+    roleDescription: z.string().optional(),
     password: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
     confirmPassword: z.string(),
   })
@@ -13,9 +13,9 @@ export const createUserSchema = z
     message: 'As senhas não coincidem',
     path: ['confirmPassword'],
   })
-  .refine((data) => data.role !== 'customer' || (data.cdCliente && data.cdCliente.trim().length > 0), {
+  .refine((data) => data.role !== 'customer' || (data.roleDescription && data.roleDescription.trim().length > 0), {
     message: 'Função é obrigatória para perfil Cliente',
-    path: ['cdCliente'],
+    path: ['roleDescription'],
   });
 
 export type CreateUserFormValues = z.infer<typeof createUserSchema>;
