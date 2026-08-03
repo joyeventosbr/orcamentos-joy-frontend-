@@ -132,16 +132,16 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
 
   return (
     <header className="flex flex-col border-b border-gray-200 bg-white flex-shrink-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
-        <div className="flex items-center gap-4 min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-6 py-3">
+        <div className="flex items-center gap-4 min-w-0 flex-1 basis-64">
           <button
             onClick={onNavigateBack}
             className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               <input
                 type="text"
                 value={draft.name}
@@ -151,28 +151,30 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
                 }}
                 onBlur={() => syncFieldOnBlur("name")}
                 disabled={isLocked}
-                className={`text-lg font-semibold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-brand-primary rounded px-1 -ml-1 transition-all w-full min-w-[8rem] max-w-80 ${
+                className={`text-lg font-semibold text-gray-900 bg-transparent border-none outline-none focus:ring-2 focus:ring-brand-primary rounded px-1 -ml-1 transition-all min-w-0 flex-1 basis-[8rem] max-w-80 ${
                   isLocked ? "cursor-default opacity-75" : "hover:bg-gray-50"
                 }`}
               />
 
-              <div className="w-px h-5 bg-gray-200" aria-hidden />
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="hidden sm:block w-px h-5 bg-gray-200" aria-hidden />
 
-              <Badge variant={getStatusBadgeVariant(budget.status)} className="gap-1.5">
-                {isLocked && <Lock size={12} />}
-                {displayStatus}
-              </Badge>
+                <Badge variant={getStatusBadgeVariant(budget.status)} className="gap-1.5">
+                  {isLocked && <Lock size={12} />}
+                  {displayStatus}
+                </Badge>
 
-              {shouldShowBudgetVersion(budget) && (
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600">
-                  v{budget.version}
-                </span>
-              )}
+                {shouldShowBudgetVersion(budget) && (
+                  <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-600">
+                    v{budget.version}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 justify-end">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-end max-sm:w-full">
           <Button
             variant={activeSidebar === "profitability" ? "default" : "outline"}
             onClick={onToggleProfitability}

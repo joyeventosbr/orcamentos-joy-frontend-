@@ -1,15 +1,15 @@
 import { PageLoader } from "@/src/components/ui/PageLoader/PageLoader";
 import { usePermissions } from "@/src/hooks/use-permissions";
+import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
+import { useBudgetLeaveGuard } from "@/src/hooks/useBudgetLeaveGuard";
 import { ExcelExportVariant, exportBudgetToExcel } from "@/src/lib/budgetExcelExport";
 import { getNextTabCell } from "@/src/lib/budgetSpreadsheetNavigation";
 import { getBudgetApprovalError, getProfitabilityApprovalError } from "@/src/lib/budgetValidation";
 import { buildDashboardReturnState, DashboardReturnState } from "@/src/lib/dashboardNavigation";
-import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
-import { useBudgetLeaveGuard } from "@/src/hooks/useBudgetLeaveGuard";
 import { Budget, BudgetItem } from "@/src/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { BudgetEditorSidebars } from "./BudgetEditorSidebars";
 import { BudgetEditorSpreadsheetArea } from "./BudgetEditorSpreadsheetArea";
 import { ApprovalConfirmModal } from "./components/ApprovalConfirmModal";
@@ -158,10 +158,7 @@ export function BudgetEditor() {
       toast.error(approvalError);
       return;
     }
-    const profitabilityError = getProfitabilityApprovalError(
-      editor.profitabilitySummary.rentabilidadeProd,
-      isAdmin,
-    );
+    const profitabilityError = getProfitabilityApprovalError(editor.profitabilitySummary.rentabilidadeProd, isAdmin);
     if (profitabilityError) {
       toast.error(profitabilityError);
       return;
@@ -176,10 +173,7 @@ export function BudgetEditor() {
       toast.error(approvalError);
       return;
     }
-    const profitabilityError = getProfitabilityApprovalError(
-      editor.profitabilitySummary.rentabilidadeProd,
-      isAdmin,
-    );
+    const profitabilityError = getProfitabilityApprovalError(editor.profitabilitySummary.rentabilidadeProd, isAdmin);
     if (profitabilityError) {
       toast.error(profitabilityError);
       return;

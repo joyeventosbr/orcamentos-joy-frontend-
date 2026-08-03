@@ -1,5 +1,5 @@
-import { BudgetSpreadsheet } from "@/src/pages/BudgetEditor/components/BudgetSpreadsheet";
 import { ProfitabilityCategory } from "@/src/hooks/useProfitabilitySummary";
+import { BudgetSpreadsheet } from "@/src/pages/BudgetEditor/components/BudgetSpreadsheet";
 import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
 import { memo } from "react";
 

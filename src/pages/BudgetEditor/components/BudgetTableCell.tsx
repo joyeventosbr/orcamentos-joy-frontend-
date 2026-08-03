@@ -1,5 +1,4 @@
 import { formatCurrencyBRL } from "@/src/lib/formatters";
-import { resolvePercentNfBV } from "@/src/lib/profitability";
 import { BILLING_TYPE_OPTIONS, BudgetItem, isInternalServiceCategory, TBudgetItemUpdater } from "@/src/types";
 import React, { memo, useEffect, useRef, useState } from "react";
 
@@ -206,10 +205,6 @@ const CURRENCY_FIELDS = [
   "fornecedorValue",
 ];
 const PERCENT_FIELDS = ["percentBV", "percentNfBV", "percentNfOver"];
-
-function getPercentNfBVValue(item: BudgetItem): number {
-  return resolvePercentNfBV(item.billingType, item.percentBV || 0, item.percentNfBV);
-}
 
 function areBudgetTableCellPropsEqual(prev: BudgetTableCellProps, next: BudgetTableCellProps): boolean {
   if (prev.item !== next.item) return false;
@@ -453,12 +448,10 @@ export const BudgetTableCell = memo(function BudgetTableCell({
     }
 
     if (type === "number") {
-      const numericValue = field === "percentNfBV" ? getPercentNfBVValue(item) : Number(item[field]) || 0;
-
       return (
         <div className="h-full w-full px-1 py-1">
           <EditableNumberInput
-            value={numericValue}
+            value={Number(item[field]) || 0}
             align={align}
             onCommit={(val) => onUpdate(item.id, field, val)}
             onBlur={onCellBlur}
@@ -485,8 +478,6 @@ export const BudgetTableCell = memo(function BudgetTableCell({
 
   if (CURRENCY_FIELDS.includes(field as string)) {
     displayValue = formatCurrencyBRL(Number(item[field]) || 0);
-  } else if (field === "percentNfBV") {
-    displayValue = `${getPercentNfBVValue(item).toFixed(1)}%`;
   } else if (PERCENT_FIELDS.includes(field as string)) {
     const val = item[field] as number;
     displayValue = `${(val || 0).toFixed(1)}%`;
