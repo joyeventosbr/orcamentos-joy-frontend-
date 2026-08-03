@@ -9,6 +9,10 @@ export interface CreateCustomerRequest {
   name: string;
 }
 
+export interface UpdateCustomerRequest {
+  name: string;
+}
+
 export interface Folder {
   id: string;
   customerId: string;
@@ -19,6 +23,10 @@ export interface Folder {
 
 export interface CreateFolderRequest {
   customerId: string;
+  name: string;
+}
+
+export interface UpdateFolderRequest {
   name: string;
 }
 
@@ -159,6 +167,7 @@ export interface BudgetLine {
   percentBv: number | null;
   percentNfBv: number | null;
   percentNfOver: number | null;
+  nfReceived: boolean;
 }
 
 export interface CreateBudgetLineRequest {
@@ -186,6 +195,7 @@ export interface CreateBudgetLineRequest {
   percentBv?: number | null;
   percentNfBv?: number | null;
   percentNfOver?: number | null;
+  nfReceived?: boolean;
 }
 
 export interface UpdateBudgetLineRequest {
@@ -212,6 +222,7 @@ export interface UpdateBudgetLineRequest {
   percentBv?: number | null;
   percentNfBv?: number | null;
   percentNfOver?: number | null;
+  nfReceived?: boolean;
 }
 
 export interface BulkUpdateBudgetLinesRequest {

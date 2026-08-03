@@ -6,11 +6,18 @@ import { AlertTriangle, Copy, Lock } from "lucide-react";
 interface ApprovalConfirmModalProps {
   budget: Budget;
   error: string | null;
+  isAdminOverride?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export function ApprovalConfirmModal({ budget, error, onConfirm, onCancel }: ApprovalConfirmModalProps) {
+export function ApprovalConfirmModal({
+  budget,
+  error,
+  isAdminOverride = false,
+  onConfirm,
+  onCancel,
+}: ApprovalConfirmModalProps) {
   const isConcorrencia = budget.status === BudgetStatus.Concorrencia;
 
   return (
@@ -30,6 +37,18 @@ export function ApprovalConfirmModal({ budget, error, onConfirm, onCancel }: App
           </p>
 
           <div className="space-y-3 mb-4">
+            {isAdminOverride && (
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertTriangle size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-900">Exceção de administrador</p>
+                  <p className="text-xs text-amber-700">
+                    Este orçamento não possui rentabilidade positiva. Ao confirmar, você autoriza a aprovação como administrador.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
               <Lock size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
               <div>

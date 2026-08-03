@@ -14,12 +14,12 @@ type BudgetItemRowCellProps = {
   onCellTab: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
   isBillingTypeLocked: boolean;
+  isLocked: boolean;
 };
 
 interface BudgetItemRowProps extends BudgetItemRowCellProps {
   item: BudgetItem;
   isLast: boolean;
-  isLocked: boolean;
   onDeleteRow: (id: string) => void;
 }
 
@@ -37,16 +37,16 @@ const BudgetItemRow = memo(
     onDeleteRow,
   }: BudgetItemRowProps) {
     const profitabilityMetrics = mapBudgetItemToProfitabilityMetrics(item);
-    const cellProps = { editingCell, onCellClick, onCellBlur, onCellTab, onUpdate, isBillingTypeLocked };
+    const cellProps = { editingCell, onCellClick, onCellBlur, onCellTab, onUpdate, isBillingTypeLocked, isLocked };
 
     return (
       <tr
         className={`group hover:bg-gray-50 transition-colors divide-x divide-slate-100 ${!isLast ? "border-b border-slate-100" : ""}`}
       >
-        <td className="align-middle px-3 py-1 bg-slate-50 group-hover:bg-slate-100 text-slate-500 font-medium whitespace-nowrap">
+        <td className="sticky left-0 z-10 align-middle px-3 py-1 w-[80px] min-w-[80px] max-w-[80px] bg-slate-50 group-hover:bg-slate-100 text-slate-500 font-medium whitespace-nowrap">
           {item.itemNumber}
         </td>
-        <td className="align-top p-0 bg-white group-hover:bg-gray-50 w-[200px] min-w-[200px]">
+        <td className="sticky left-[80px] z-10 align-top p-0 bg-white group-hover:bg-gray-50 w-[200px] min-w-[200px] shadow-[2px_0_0_0_rgb(226_232_240)]">
           <BudgetTableCell {...cellProps} item={item} field="name" type="text" />
         </td>
         <td className="align-top p-0 min-w-[300px]">
@@ -108,6 +108,9 @@ const BudgetItemRow = memo(
         </td>
         <td className="align-middle px-3 py-2 text-right font-semibold text-slate-900 bg-gray-100/50">
           {formatCurrencyBRL(profitabilityMetrics.valorReal)}
+        </td>
+        <td className="align-middle p-0">
+          <BudgetTableCell {...cellProps} item={item} field="nfReceived" />
         </td>
         <td className="align-middle text-center p-0 border-l-2 border-slate-100">
           {!isLocked && (
@@ -196,13 +199,15 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
             : "bg-gray-100 text-gray-900 select-none group border-b border-gray-200"
         }
       >
-        <td colSpan={23} className="p-0 relative">
+        <td colSpan={24} className="p-0 relative">
           <div
             className={`flex items-center px-0 py-2 cursor-pointer transition-colors w-full h-full ${isInternalServicesCategory ? "hover:bg-zinc-900" : "hover:bg-gray-200"}`}
             onClick={() => onToggle(category.id)}
           >
-            <div className="flex w-full items-center justify-between px-2">
-              <div className="flex items-center">
+            <div className="flex w-full items-center justify-between">
+              <div
+                className={`sticky left-0 z-10 flex w-[280px] min-w-[280px] self-stretch items-center px-2 pr-4 shadow-[2px_0_0_0_rgb(203_213_225)] ${isInternalServicesCategory ? "bg-black" : "bg-gray-100"}`}
+              >
                 <button
                   className={`px-1 ${isInternalServicesCategory ? "text-white/70 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
                 >
@@ -213,7 +218,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-2">
                 <div
                   className={`flex items-center px-3 py-1 border shadow-sm rounded text-sm font-bold whitespace-nowrap ${isInternalServicesCategory ? "border-white/20 bg-white/10 text-white" : "bg-white border-gray-200 text-gray-900"}`}
                 >
@@ -277,7 +282,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
           </td>
         ))}
         {/* Rentabilidade Totals */}
-        <td className="px-3 py-2 border-l-2 border-gray-200" />
+        <td className="px-3 py-2 border-l-2 border-gray-200 bg-gray-200" />
         <td className="px-3 py-2 text-right text-xs font-black tabular-nums text-gray-900 bg-gray-200">
           {categoryProfitability ? formatCurrencyBRL(categoryProfitability.totals.valorFornecedor) : "-"}
         </td>
@@ -292,6 +297,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
         <td className="px-3 py-2 text-right text-xs font-black tabular-nums text-gray-900 bg-gray-300">
           {categoryProfitability ? formatCurrencyBRL(categoryProfitability.totals.valorReal) : "-"}
         </td>
+        <td className="px-3 py-2 bg-gray-200" />
         <td className="px-3 py-2 border-l-2 border-slate-100" />
       </tr>
     </React.Fragment>

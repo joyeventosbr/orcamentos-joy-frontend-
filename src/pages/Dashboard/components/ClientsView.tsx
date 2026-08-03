@@ -2,17 +2,102 @@ import { Card, CardContent } from "@/src/components/ui/Card/Card";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Customer, Folder } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Calendar, FolderOpen, MoreHorizontal, Users } from "lucide-react";
+import { Calendar, FolderOpen, MoreHorizontal, Pencil, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ClientsViewProps {
   customers: Customer[];
   folders: Folder[];
   viewMode: "grid" | "table";
   onSelectCustomer: (customerId: string) => void;
+  onRenameCustomer: (customer: Customer) => void;
   onClearSearch: () => void;
 }
 
-export function ClientsView({ customers, folders, viewMode, onSelectCustomer, onClearSearch }: ClientsViewProps) {
+function CustomerActionsMenu({
+  customer,
+  isOpen,
+  onToggle,
+  onRename,
+}: {
+  customer: Customer;
+  isOpen: boolean;
+  onToggle: () => void;
+  onRename: (customer: Customer) => void;
+}) {
+  return (
+    <div
+      data-customer-actions
+      className="relative inline-block"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className={`rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 ${
+          isOpen
+            ? "bg-gray-100 text-gray-900 opacity-100"
+            : "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+        }`}
+        aria-label={`Ações do cliente ${customer.name}`}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+      >
+        <MoreHorizontal size={20} />
+      </button>
+      {isOpen && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => onRename(customer)}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            <Pencil size={14} />
+            Renomear
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ClientsView({
+  customers,
+  folders,
+  viewMode,
+  onSelectCustomer,
+  onRenameCustomer,
+  onClearSearch,
+}: ClientsViewProps) {
+  const [openMenuCustomerId, setOpenMenuCustomerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const closeMenu = (event: PointerEvent) => {
+      if (!(event.target as Element).closest("[data-customer-actions]")) {
+        setOpenMenuCustomerId(null);
+      }
+    };
+    const closeMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMenuCustomerId(null);
+    };
+
+    document.addEventListener("pointerdown", closeMenu);
+    document.addEventListener("keydown", closeMenuOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMenu);
+      document.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, []);
+
+  const handleRename = (customer: Customer) => {
+    setOpenMenuCustomerId(null);
+    onRenameCustomer(customer);
+  };
+
   if (customers.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -46,9 +131,14 @@ export function ClientsView({ customers, folders, viewMode, onSelectCustomer, on
                   <div className="w-10 h-10 rounded-lg bg-brand-primary/10 flex items-center justify-center text-brand-primary">
                     <FolderOpen size={20} />
                   </div>
-                  <button className="text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreHorizontal size={20} />
-                  </button>
+                  <CustomerActionsMenu
+                    customer={customer}
+                    isOpen={openMenuCustomerId === customer.id}
+                    onToggle={() =>
+                      setOpenMenuCustomerId((current) => current === customer.id ? null : customer.id)
+                    }
+                    onRename={handleRename}
+                  />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-snug">{customer.name}</h3>
                 <p className="text-sm text-gray-500">
@@ -69,7 +159,7 @@ export function ClientsView({ customers, folders, viewMode, onSelectCustomer, on
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
       <table className="w-full text-left text-sm">
         <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-medium">
           <tr>
@@ -97,9 +187,14 @@ export function ClientsView({ customers, folders, viewMode, onSelectCustomer, on
                   {format(new Date(customer.createdAt), "dd/MM/yyyy")}
                 </td>
                 <td className="px-6 py-4">
-                  <button className="text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreHorizontal size={20} />
-                  </button>
+                  <CustomerActionsMenu
+                    customer={customer}
+                    isOpen={openMenuCustomerId === customer.id}
+                    onToggle={() =>
+                      setOpenMenuCustomerId((current) => current === customer.id ? null : customer.id)
+                    }
+                    onRename={handleRename}
+                  />
                 </td>
               </tr>
             );

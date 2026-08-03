@@ -75,6 +75,17 @@ export function toRateDecimal(percentValue: number): number {
   return percentValue / 100;
 }
 
+/**
+ * Calcula somente o acréscimo necessário para que a alíquota incida sobre o
+ * valor final da nota. Ex.: 100 / (1 - 0,18) - 100 = 21,95.
+ */
+export function calculateGrossUpTax(baseValue: number, taxRate: number): number {
+  const base = Number(baseValue) || 0;
+  const rate = Number(taxRate) || 0;
+  if (base <= 0 || rate <= 0 || rate >= 1) return 0;
+  return base / (1 - rate) - base;
+}
+
 export function safeDivide(numerator: number, denominator: number): number | null {
   if (denominator === 0) return null;
   return numerator / denominator;
@@ -177,11 +188,14 @@ export function calculateProfitabilityConsolidation({
   const fatViaCliente = sumValorTotalWhere(primaryItems, "VIA CLIENTE");
   const fatViaJoy =
     sumValorTotalWhere(primaryItems, "VIA NF") + sumValorTotalWhere(primaryItems, "ND OU REPASSE");
-  const impostoNfJoy = sumValorTotalWhere(primaryItems, "VIA NF") * rates.nfJoyTaxRate;
+  const impostoNfJoy = calculateGrossUpTax(
+    sumValorTotalWhere(primaryItems, "VIA NF"),
+    rates.nfJoyTaxRate,
+  );
   const honorarios = (fatViaCliente + fatViaJoy) * toRateDecimal(honorariumPercentage);
   const taxaAdmin = calculateAdministrativeTax(fatViaJoy, antecipadoCliente, prazoDias, rates.adminMonthlyRate);
   const subtotalServicos = internalServicesSubtotal + honorarios + taxaAdmin;
-  const impostoNfServicos = subtotalServicos * rates.nfServicesTaxRate;
+  const impostoNfServicos = calculateGrossUpTax(subtotalServicos, rates.nfServicesTaxRate);
   const fatGeral = fatViaCliente + fatViaJoy;
   const totalGeral = fatGeral + subtotalServicos + impostoNfServicos;
 

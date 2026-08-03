@@ -16,8 +16,10 @@ interface AppDataContextType {
   budgets: ApiBudget[];
   isLoading: boolean;
   addCustomer: (name: string) => Promise<Customer>;
+  renameCustomer: (id: string, name: string) => Promise<Customer>;
   deleteCustomer: (id: string) => Promise<void>;
   addFolder: (customerId: string, name: string) => Promise<Folder>;
+  renameFolder: (id: string, name: string) => Promise<Folder>;
   deleteFolder: (id: string) => Promise<void>;
   addBudget: (input: { folderId: string; customerId: string; name: string }) => Promise<ApiBudget>;
   copyBudget: (id: string) => Promise<ApiBudget>;
@@ -61,8 +63,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: customersKeys.queries.list }),
   });
 
+  const updateCustomerMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => customersReq.update(id, { name }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: customersKeys.queries.list }),
+  });
+
   const createFolderMutation = useMutation({
     mutationFn: foldersReq.create,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: foldersKeys.queries.list }),
+  });
+
+  const updateFolderMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => foldersReq.update(id, { name }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: foldersKeys.queries.list }),
   });
 
@@ -95,6 +107,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [deleteCustomerMutation.mutateAsync],
   );
 
+  const renameCustomer = useCallback(
+    (id: string, name: string) => updateCustomerMutation.mutateAsync({ id, name }),
+    [updateCustomerMutation.mutateAsync],
+  );
+
   const addFolder = useCallback(
     (customerId: string, name: string) => createFolderMutation.mutateAsync({ customerId, name }),
     [createFolderMutation.mutateAsync],
@@ -103,6 +120,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const deleteFolder = useCallback(
     (id: string) => deleteFolderMutation.mutateAsync(id),
     [deleteFolderMutation.mutateAsync],
+  );
+
+  const renameFolder = useCallback(
+    (id: string, name: string) => updateFolderMutation.mutateAsync({ id, name }),
+    [updateFolderMutation.mutateAsync],
   );
 
   const addBudget = useCallback(
@@ -136,8 +158,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       budgets,
       isLoading,
       addCustomer,
+      renameCustomer,
       deleteCustomer,
       addFolder,
+      renameFolder,
       deleteFolder,
       addBudget,
       copyBudget,
@@ -145,8 +169,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }),
     [
       customers, folders, budgets, isLoading,
-      addCustomer, deleteCustomer,
-      addFolder, deleteFolder,
+      addCustomer, renameCustomer, deleteCustomer,
+      addFolder, renameFolder, deleteFolder,
       addBudget, copyBudget, deleteBudget,
     ],
   );

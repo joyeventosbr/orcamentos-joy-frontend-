@@ -12,7 +12,7 @@ import { ClientsView } from "./components/ClientsView";
 import { JobsView } from "./components/JobsView";
 import { BudgetsView } from "./components/BudgetsView";
 import { DeleteBudgetModal } from "./components/DeleteBudgetModal";
-import { ApiBudget } from "@/src/types/api.types";
+import { ApiBudget, Customer, Folder } from "@/src/types/api.types";
 
 type DashboardLevel = "customers" | "folders" | "budgets";
 
@@ -28,10 +28,23 @@ export function Dashboard() {
   const [duplicatingBudgetId, setDuplicatingBudgetId] = useState<string | null>(null);
   const [deletingBudgetId, setDeletingBudgetId] = useState<string | null>(null);
   const [budgetToDelete, setBudgetToDelete] = useState<ApiBudget | null>(null);
+  const [customerToRename, setCustomerToRename] = useState<Customer | null>(null);
+  const [folderToRename, setFolderToRename] = useState<Folder | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const { customers, folders, budgets, isLoading, addCustomer, addFolder, addBudget, copyBudget, deleteBudget } =
-    useAppData();
+  const {
+    customers,
+    folders,
+    budgets,
+    isLoading,
+    addCustomer,
+    renameCustomer,
+    addFolder,
+    renameFolder,
+    addBudget,
+    copyBudget,
+    deleteBudget,
+  } = useAppData();
 
   const { currentCustomer, currentFolder, filteredCustomers, filteredFolders, filteredBudgets } =
     useDashboardFilters({
@@ -138,6 +151,42 @@ export function Dashboard() {
     }
   };
 
+  const handleRenameFolder = async (name: string) => {
+    if (!folderToRename) return;
+    const normalizedName = name.trim();
+    if (normalizedName === folderToRename.name) {
+      setFolderToRename(null);
+      return;
+    }
+
+    try {
+      await renameFolder(folderToRename.id, normalizedName);
+      toast.success("Pasta renomeada com sucesso!");
+      setFolderToRename(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao renomear pasta");
+      throw error;
+    }
+  };
+
+  const handleRenameCustomer = async (name: string) => {
+    if (!customerToRename) return;
+    const normalizedName = name.trim();
+    if (normalizedName === customerToRename.name) {
+      setCustomerToRename(null);
+      return;
+    }
+
+    try {
+      await renameCustomer(customerToRename.id, normalizedName);
+      toast.success("Cliente renomeado com sucesso!");
+      setCustomerToRename(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao renomear cliente");
+      throw error;
+    }
+  };
+
   const handleCreateEntity = async (name: string) => {
     if (level === "customers") {
       await addCustomer(name);
@@ -216,6 +265,7 @@ export function Dashboard() {
             folders={folders}
             viewMode={viewMode}
             onSelectCustomer={handleSelectCustomer}
+            onRenameCustomer={setCustomerToRename}
             onClearSearch={() => setSearchQuery("")}
           />
         )}
@@ -225,6 +275,7 @@ export function Dashboard() {
             budgets={budgets}
             viewMode={viewMode}
             onSelectFolder={handleSelectFolder}
+            onRenameFolder={setFolderToRename}
             onClearSearch={() => setSearchQuery("")}
           />
         )}
@@ -262,6 +313,30 @@ export function Dashboard() {
           submitLabel={modalConfig.submitLabel}
           onCancel={() => setIsModalOpen(false)}
           onSubmit={handleCreateEntity}
+        />
+      )}
+
+      {folderToRename && (
+        <CreateEntityModal
+          title="Renomear Pasta"
+          placeholder="Nome da pasta / evento"
+          submitLabel="Salvar"
+          submittingLabel="Salvando..."
+          initialName={folderToRename.name}
+          onCancel={() => setFolderToRename(null)}
+          onSubmit={handleRenameFolder}
+        />
+      )}
+
+      {customerToRename && (
+        <CreateEntityModal
+          title="Renomear Cliente"
+          placeholder="Nome do cliente"
+          submitLabel="Salvar"
+          submittingLabel="Salvando..."
+          initialName={customerToRename.name}
+          onCancel={() => setCustomerToRename(null)}
+          onSubmit={handleRenameCustomer}
         />
       )}
     </div>

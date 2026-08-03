@@ -2,6 +2,7 @@ import { PageLoader } from "@/src/components/ui/PageLoader/PageLoader";
 import { usePermissions } from "@/src/hooks/use-permissions";
 import { ExcelExportVariant, exportBudgetToExcel } from "@/src/lib/budgetExcelExport";
 import { getNextTabCell } from "@/src/lib/budgetSpreadsheetNavigation";
+import { getBudgetApprovalError, getProfitabilityApprovalError } from "@/src/lib/budgetValidation";
 import { buildDashboardReturnState, DashboardReturnState } from "@/src/lib/dashboardNavigation";
 import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
 import { useBudgetLeaveGuard } from "@/src/hooks/useBudgetLeaveGuard";
@@ -24,7 +25,7 @@ export function BudgetEditor() {
   const headerRef = useRef<BudgetEditorHeaderHandle>(null);
   const { isAdmin } = usePermissions();
 
-  const editor = useBudgetEditor(budgetId);
+  const editor = useBudgetEditor(budgetId, isAdmin);
 
   const navigateBackToFolder = useCallback(() => {
     const returnStateFromHistory = location.state as DashboardReturnState | null;
@@ -152,40 +153,40 @@ export function BudgetEditor() {
   );
 
   const handleOpenApprovalModal = useCallback(() => {
-    const { missingFields, inconsistentItems, itemsMissingQtyOrDays } = editor.runValidation();
-    if (missingFields.length > 0) {
-      toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
+    const approvalError = getBudgetApprovalError(editor.runValidation());
+    if (approvalError) {
+      toast.error(approvalError);
       return;
     }
-    if (itemsMissingQtyOrDays.length > 0) {
-      toast.error(`Corrija ${itemsMissingQtyOrDays.length} item(ns) com Qtd ou Diárias não preenchidos antes de aprovar`);
-      return;
-    }
-    if (inconsistentItems.length > 0) {
-      toast.error(`Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`);
+    const profitabilityError = getProfitabilityApprovalError(
+      editor.profitabilitySummary.rentabilidadeProd,
+      isAdmin,
+    );
+    if (profitabilityError) {
+      toast.error(profitabilityError);
       return;
     }
     setApprovalError(null);
     setShowApprovalModal(true);
-  }, [editor.runValidation]);
+  }, [editor.runValidation, editor.profitabilitySummary.rentabilidadeProd, isAdmin]);
 
   const handleOpenApproveToProductionModal = useCallback(() => {
-    const { missingFields, inconsistentItems, itemsMissingQtyOrDays } = editor.runValidation();
-    if (missingFields.length > 0) {
-      toast.error(`Preencha os campos obrigatórios antes de aprovar: ${missingFields.join(", ")}`);
+    const approvalError = getBudgetApprovalError(editor.runValidation());
+    if (approvalError) {
+      toast.error(approvalError);
       return;
     }
-    if (itemsMissingQtyOrDays.length > 0) {
-      toast.error(`Corrija ${itemsMissingQtyOrDays.length} item(ns) com Qtd ou Diárias não preenchidos antes de aprovar`);
-      return;
-    }
-    if (inconsistentItems.length > 0) {
-      toast.error(`Corrija ${inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`);
+    const profitabilityError = getProfitabilityApprovalError(
+      editor.profitabilitySummary.rentabilidadeProd,
+      isAdmin,
+    );
+    if (profitabilityError) {
+      toast.error(profitabilityError);
       return;
     }
     setApproveToProductionError(null);
     setShowApproveToProductionModal(true);
-  }, [editor.runValidation]);
+  }, [editor.runValidation, editor.profitabilitySummary.rentabilidadeProd, isAdmin]);
 
   const toggleSummarySidebar = useCallback(() => {
     setActiveSidebar((current) => (current === "summary" ? null : "summary"));
@@ -339,6 +340,7 @@ export function BudgetEditor() {
         <ApprovalConfirmModal
           budget={editor.budget}
           error={approvalError}
+          isAdminOverride={isAdmin && editor.profitabilitySummary.rentabilidadeProd <= 0}
           onConfirm={handleApproveConfirm}
           onCancel={() => {
             setShowApprovalModal(false);
@@ -351,6 +353,7 @@ export function BudgetEditor() {
         <ApproveToProductionConfirmModal
           budget={editor.budget}
           error={approveToProductionError}
+          isAdminOverride={isAdmin && editor.profitabilitySummary.rentabilidadeProd <= 0}
           isLoading={isApprovingToProduction}
           onConfirm={() => void handleApproveToProductionConfirm()}
           onCancel={() => {

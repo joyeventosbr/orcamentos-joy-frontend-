@@ -19,6 +19,7 @@ export const BUDGET_ITEM_NAV_FIELDS: (keyof BudgetItem)[] = [
   "percentBV",
   "percentNfBV",
   "percentNfOver",
+  "nfReceived",
 ];
 
 export function getNextTabCell(

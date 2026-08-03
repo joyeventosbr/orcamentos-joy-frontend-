@@ -265,7 +265,7 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
             }}
             onBlur={() => syncFieldOnBlur("client")}
             disabled={isLocked}
-            title={isClientEmpty ? "Campo obrigatório" : undefined}
+            title={isClientEmpty ? "Obrigatório para aprovar" : undefined}
             className={`text-sm font-medium border-none outline-none rounded px-2 py-1 w-40 transition-all ${
               isLocked
                 ? "cursor-default bg-transparent text-slate-600"
@@ -273,7 +273,7 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
                   ? "bg-red-50 ring-1 ring-red-200 text-slate-600 placeholder-red-300 focus:ring-red-300"
                   : "text-slate-600 hover:bg-slate-50 placeholder-slate-300 focus:ring-1 focus:ring-brand-primary/30"
             }`}
-            placeholder={isClientEmpty ? "Obrigatório" : "Nome do cliente"}
+            placeholder={isClientEmpty ? "Obrigatório para aprovar" : "Nome do cliente"}
           />
         </div>
         <div className="w-px h-4 bg-slate-200"></div>
@@ -292,7 +292,7 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
             }}
             onBlur={() => syncFieldOnBlur("job")}
             disabled={isLocked}
-            title={isJobEmpty ? "Campo obrigatório" : undefined}
+            title={isJobEmpty ? "Obrigatório para aprovar" : undefined}
             className={`text-sm font-medium border-none outline-none rounded px-2 py-1 w-48 transition-all ${
               isLocked
                 ? "cursor-default bg-transparent text-slate-600"
@@ -300,7 +300,7 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
                   ? "bg-red-50 ring-1 ring-red-200 text-slate-600 placeholder-red-300 focus:ring-red-300"
                   : "text-slate-600 hover:bg-slate-50 placeholder-slate-300 focus:ring-1 focus:ring-brand-primary/30"
             }`}
-            placeholder={isJobEmpty ? "Obrigatório" : "Descrição do job"}
+            placeholder={isJobEmpty ? "Obrigatório para aprovar" : "Descrição do job"}
           />
         </div>
         <div className="w-px h-4 bg-slate-200"></div>
@@ -314,7 +314,7 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
             value={budget.deadline || ""}
             onChange={(e) => onBudgetChange({ deadline: e.target.value })}
             disabled={isLocked}
-            title={isDeadlineEmpty ? "Campo obrigatório" : undefined}
+            title={isDeadlineEmpty ? "Obrigatório para aprovar" : undefined}
             className={`text-sm font-medium border-none outline-none rounded px-2 py-1 transition-all ${
               isLocked
                 ? "cursor-default bg-transparent text-slate-600"
@@ -323,7 +323,7 @@ export const BudgetEditorHeader = forwardRef<BudgetEditorHeaderHandle, BudgetEdi
                   : "text-slate-600 bg-transparent cursor-pointer hover:bg-slate-50 focus:ring-1 focus:ring-brand-primary/30"
             }`}
           >
-            <option value="">{isDeadlineEmpty ? "Obrigatório" : "-- dias"}</option>
+            <option value="">{isDeadlineEmpty ? "Obrigatório para aprovar" : "-- dias"}</option>
             <option value="30">30 dias</option>
             <option value="45">45 dias</option>
             <option value="60">60 dias</option>

@@ -82,6 +82,7 @@ export function mapLineToItem(line: BudgetLine): BudgetItem {
     percentBV: line.percentBv ?? 0,
     percentNfBV: line.percentNfBv ?? undefined,
     percentNfOver: line.percentNfOver ?? 0,
+    nfReceived: line.nfReceived ?? false,
   };
 }
 
@@ -102,6 +103,7 @@ function mapItemProfitabilityToApi(item: BudgetItem) {
     percentBv: item.percentBV,
     percentNfBv: item.percentNfBV ?? null,
     percentNfOver: item.percentNfOver,
+    nfReceived: item.nfReceived,
   };
 }
 
@@ -158,7 +160,7 @@ export function mapItemToUpdateRequest(item: BudgetItem): UpdateBudgetLineReques
 export function mapBudgetToUpdateRequest(budget: Budget): UpdateBudgetRequest {
   return {
     name: budget.name,
-    jobDescription: budget.job,
+    jobDescription: emptyToUndefined(budget.job),
     location: emptyToUndefined(budget.location),
     eventDate: emptyToUndefined(budget.date),
     participants: emptyToUndefined(budget.participants),

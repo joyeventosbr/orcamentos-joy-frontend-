@@ -17,7 +17,13 @@ import { usePaymentScheduleSummary } from "@/src/hooks/usePaymentScheduleSummary
 import { ProfitabilityCategory, useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from "@/src/lib/budgetFactory";
 import { buildStableGroupedItems } from "@/src/lib/budgetGroupedItems";
-import { IBudgetValidationResult, validateBudget } from "@/src/lib/budgetValidation";
+import { DEFAULT_PROFITABILITY_RATES } from "@/src/lib/profitabilityRates";
+import {
+  getBudgetApprovalError,
+  getProfitabilityApprovalError,
+  IBudgetValidationResult,
+  validateBudget,
+} from "@/src/lib/budgetValidation";
 import { isBudgetApproved } from "@/src/lib/budgetStatus";
 import { buildStableProfitabilityCategoryMap } from "@/src/lib/stableProfitabilityMap";
 import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage, isInternalServiceCategory } from "@/src/types";
@@ -28,7 +34,7 @@ import toast from "react-hot-toast";
 
 // --- Hook ---
 
-export function useBudgetEditor(budgetId: string | undefined) {
+export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
   const queryClient = useQueryClient();
 
   const { data: budgetDetail, isLoading: budgetLoading } = useQuery({
@@ -109,7 +115,17 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
   // --- Summaries ---
 
-  const billingSummary = useBudgetBillingSummary(primaryBudgetItems);
+  const taxNfPercent = budget?.taxNf ?? 18;
+  const taxNfRate = taxNfPercent / 100;
+  const profitabilityRates = useMemo(
+    () => ({
+      ...DEFAULT_PROFITABILITY_RATES,
+      nfJoyTaxRate: taxNfRate,
+      nfServicesTaxRate: taxNfRate,
+    }),
+    [taxNfRate],
+  );
+  const billingSummary = useBudgetBillingSummary(primaryBudgetItems, taxNfPercent);
   const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
   const honorariumPercentage = budget?.honorariumPercentage ?? 10;
   const prazoDias = Number(budget?.deadline) || 0;
@@ -122,6 +138,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
     fatViaJoy,
     antecipadoCliente,
     prazoDias,
+    taxNfPercent,
   );
   const profitabilitySummary = useProfitabilitySummary({
     primaryItems: primaryBudgetItems,
@@ -130,6 +147,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
     honorariumPercentage,
     prazoDias,
     antecipadoCliente,
+    rates: profitabilityRates,
   });
 
   const profitabilityCategoryMap = useMemo(() => {
@@ -147,7 +165,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
   // --- Item actions ---
 
   const updateItem = useCallback(
-    (id: string, field: keyof BudgetItem, value: string | number) => {
+    (id: string, field: keyof BudgetItem, value: string | number | boolean) => {
       if (isLocked) return;
       if (field === "billingType" && isBillingTypeLocked) return;
       startTransition(() => {
@@ -258,20 +276,6 @@ export function useBudgetEditor(budgetId: string | undefined) {
       const budgetToSave = budget && headerOverrides ? { ...budget, ...headerOverrides } : budget;
       if (!budgetToSave || !budgetId) return false;
 
-      const { missingFields, inconsistentItems, itemsMissingQtyOrDays } = validateBudget(budgetToSave);
-      if (missingFields.length > 0) {
-        toast.error(`Preencha os campos obrigatórios: ${missingFields.join(", ")}`);
-        return false;
-      }
-      if (itemsMissingQtyOrDays.length > 0) {
-        toast.error(`${itemsMissingQtyOrDays.length} item(ns) com Qtd ou Diárias não preenchidos`);
-        return false;
-      }
-      if (inconsistentItems.length > 0) {
-        toast.error(`${inconsistentItems.length} item(ns) com valor preenchido sem tipo de faturamento`);
-        return false;
-      }
-
       isSavingRef.current = true;
       setIsSaving(true);
 
@@ -326,6 +330,19 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
   const handleApprove = useCallback(async (): Promise<void> => {
     if (!budget || !budgetId) return;
+
+    const approvalError = getBudgetApprovalError(validateBudget(budget));
+    if (approvalError) {
+      toast.error(approvalError);
+      throw new Error(approvalError);
+    }
+
+    const profitabilityError = getProfitabilityApprovalError(profitabilitySummary.rentabilidadeProd, isAdmin);
+    if (profitabilityError) {
+      toast.error(profitabilityError);
+      throw new Error(profitabilityError);
+    }
+
     const saved = await saveBudget();
     if (!saved) throw new Error("Falha ao salvar antes de aprovar.");
 
@@ -346,10 +363,23 @@ export function useBudgetEditor(budgetId: string | undefined) {
 
     const countLabel = created.length === 2 ? "2 versões" : "1 versão";
     toast.success(`Aprovação concluída. ${countLabel} criada(s) na pasta.`);
-  }, [budget, budgetId, saveBudget, approveMutation, queryClient]);
+  }, [budget, budgetId, profitabilitySummary.rentabilidadeProd, isAdmin, saveBudget, approveMutation, queryClient]);
 
   const handleApproveToProduction = useCallback(async (): Promise<string> => {
     if (!budget || !budgetId) throw new Error("Orçamento não encontrado.");
+
+    const approvalError = getBudgetApprovalError(validateBudget(budget));
+    if (approvalError) {
+      toast.error(approvalError);
+      throw new Error(approvalError);
+    }
+
+    const profitabilityError = getProfitabilityApprovalError(profitabilitySummary.rentabilidadeProd, isAdmin);
+    if (profitabilityError) {
+      toast.error(profitabilityError);
+      throw new Error(profitabilityError);
+    }
+
     const saved = await saveBudget();
     if (!saved) throw new Error("Falha ao salvar antes de aprovar.");
 
@@ -358,7 +388,7 @@ export function useBudgetEditor(budgetId: string | undefined) {
     await refreshBudgetCaches(queryClient, budgetId);
     toast.success("Orçamento enviado para Produção.");
     return created.id;
-  }, [budget, budgetId, saveBudget, approveToProductionMutation, queryClient]);
+  }, [budget, budgetId, profitabilitySummary.rentabilidadeProd, isAdmin, saveBudget, approveToProductionMutation, queryClient]);
 
   return {
     budget,

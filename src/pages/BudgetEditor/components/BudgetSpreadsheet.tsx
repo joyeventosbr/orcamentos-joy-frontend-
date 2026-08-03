@@ -109,13 +109,13 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
       <div className="flex-1 min-h-0 overflow-auto space-y-6">
       {/* Primary Budget Table */}
       <div className="border border-slate-200 rounded-xl shadow-sm bg-white">
-        <table className="w-full text-sm text-left border-collapse min-w-[2300px]">
+        <table className="w-full text-sm text-left border-collapse min-w-[2400px]">
           <thead className="text-xs uppercase bg-slate-100 text-slate-600 sticky top-0 z-20 shadow-sm shadow-slate-200 divide-x divide-slate-200">
             <tr className="border-b border-slate-200">
-              <th rowSpan={2} className="px-3 py-3 w-[80px] bg-slate-100 font-semibold">
+              <th rowSpan={2} className="sticky left-0 z-30 px-3 py-3 w-[80px] min-w-[80px] max-w-[80px] bg-slate-100 font-semibold">
                 Item
               </th>
-              <th rowSpan={2} className="px-3 py-3 w-[200px] min-w-[200px] bg-slate-100 font-semibold">
+              <th rowSpan={2} className="sticky left-[80px] z-30 px-3 py-3 w-[200px] min-w-[200px] bg-slate-100 font-semibold shadow-[2px_0_0_0_rgb(203_213_225)]">
                 Nome do Item
               </th>
               <th rowSpan={2} className="px-3 py-3 min-w-[300px] font-semibold">
@@ -139,7 +139,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th colSpan={6} className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-100 text-gray-800">
                 Cronograma de Pagamento
               </th>
-              <th colSpan={8} className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-200 text-gray-900">
+              <th colSpan={9} className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-200 text-gray-900">
                 Rentabilidade
               </th>
               <th rowSpan={2} className="px-3 py-3 w-[50px] text-center font-semibold bg-slate-100">
@@ -161,6 +161,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF Over</th>
               <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">Over</th>
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Real</th>
+              <th className="px-3 py-2 min-w-[90px] text-center text-gray-800 bg-gray-100">NF recebida</th>
             </tr>
           </thead>
           <tbody className="divide-y text-slate-700">
@@ -185,13 +186,13 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
 
       {/* Internal Services Table */}
       <div className="shrink-0 border border-slate-200 rounded-xl shadow-sm bg-white">
-        <table className="w-full text-sm text-left border-collapse min-w-[2300px]">
+        <table className="w-full text-sm text-left border-collapse min-w-[2400px]">
           <thead className="text-xs uppercase bg-slate-100 text-slate-600 sticky top-0 z-20 shadow-sm shadow-slate-200 divide-x divide-slate-200">
             <tr className="border-b border-slate-200">
-              <th rowSpan={2} className="px-3 py-3 w-[80px] bg-slate-100 font-semibold">
+              <th rowSpan={2} className="sticky left-0 z-30 px-3 py-3 w-[80px] min-w-[80px] max-w-[80px] bg-slate-100 font-semibold">
                 Item
               </th>
-              <th rowSpan={2} className="px-3 py-3 w-[200px] min-w-[200px] bg-slate-100 font-semibold">
+              <th rowSpan={2} className="sticky left-[80px] z-30 px-3 py-3 w-[200px] min-w-[200px] bg-slate-100 font-semibold shadow-[2px_0_0_0_rgb(203_213_225)]">
                 Nome do Item
               </th>
               <th rowSpan={2} className="px-3 py-3 min-w-[300px] font-semibold">
@@ -215,7 +216,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th colSpan={6} className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-100 text-gray-800">
                 Cronograma de Pagamento
               </th>
-              <th colSpan={8} className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-200 text-gray-900">
+              <th colSpan={9} className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-200 text-gray-900">
                 Rentabilidade
               </th>
               <th rowSpan={2} className="px-3 py-3 w-[50px] text-center font-semibold bg-slate-100">
@@ -237,6 +238,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
               <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% NF Over</th>
               <th className="px-3 py-2 min-w-[100px] text-center text-gray-800 bg-gray-100">Over</th>
               <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Real</th>
+              <th className="px-3 py-2 min-w-[90px] text-center text-gray-800 bg-gray-100">NF recebida</th>
             </tr>
           </thead>
           <tbody className="divide-y text-slate-700">

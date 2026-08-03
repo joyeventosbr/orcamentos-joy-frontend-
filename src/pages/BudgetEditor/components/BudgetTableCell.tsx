@@ -1,3 +1,4 @@
+import { Badge } from "@/src/components/ui/Badge/Badge";
 import { formatCurrencyBRL } from "@/src/lib/formatters";
 import { resolvePercentNfBV } from "@/src/lib/profitability";
 import { BILLING_TYPE_OPTIONS, BudgetItem, isInternalServiceCategory, TBudgetItemUpdater } from "@/src/types";
@@ -191,6 +192,7 @@ interface BudgetTableCellProps {
   onCellTab: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
   isBillingTypeLocked?: boolean;
+  isLocked?: boolean;
 }
 
 const CURRENCY_FIELDS = [
@@ -216,6 +218,7 @@ function areBudgetTableCellPropsEqual(prev: BudgetTableCellProps, next: BudgetTa
   if (prev.type !== next.type) return false;
   if (prev.align !== next.align) return false;
   if (prev.isBillingTypeLocked !== next.isBillingTypeLocked) return false;
+  if (prev.isLocked !== next.isLocked) return false;
   if (prev.onUpdate !== next.onUpdate) return false;
   if (prev.onCellClick !== next.onCellClick) return false;
   if (prev.onCellBlur !== next.onCellBlur) return false;
@@ -225,6 +228,58 @@ function areBudgetTableCellPropsEqual(prev: BudgetTableCellProps, next: BudgetTa
   const nextIsEditing = next.editingCell?.id === next.item.id && next.editingCell?.field === next.field;
 
   return prevIsEditing === nextIsEditing;
+}
+
+function NfReceivedCell({
+  item,
+  isLocked,
+  isFocused,
+  onUpdate,
+  onTab,
+}: {
+  item: BudgetItem;
+  isLocked: boolean;
+  isFocused: boolean;
+  onUpdate: TBudgetItemUpdater;
+  onTab: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isFocused) {
+      inputRef.current?.focus();
+    }
+  }, [isFocused]);
+
+  if (isLocked) {
+    return (
+      <div className="h-full w-full min-h-[36px] px-2 py-2 flex items-center justify-center">
+        <Badge variant={item.nfReceived ? "success" : "neutral"} className="rounded-md">
+          {item.nfReceived ? "Sim" : "Não"}
+        </Badge>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full min-h-[36px] px-2 py-2 flex items-center justify-center">
+      <input
+        ref={inputRef}
+        type="checkbox"
+        className="h-4 w-4 cursor-pointer accent-gray-900"
+        checked={item.nfReceived}
+        onChange={(e) => onUpdate(item.id, "nfReceived", e.target.checked)}
+        onKeyDown={(e) => {
+          if (e.key === "Tab") {
+            e.preventDefault();
+            onTab();
+          }
+        }}
+        title="NF recebida"
+        aria-label="NF recebida"
+      />
+    </div>
+  );
 }
 
 function BillingTypeSelect({
@@ -324,6 +379,7 @@ export const BudgetTableCell = memo(function BudgetTableCell({
   onCellTab,
   onUpdate,
   isBillingTypeLocked = false,
+  isLocked = false,
 }: BudgetTableCellProps) {
   const handleTab = () => onCellTab(item.id, field);
 
@@ -336,6 +392,20 @@ export const BudgetTableCell = memo(function BudgetTableCell({
         item={item}
         hasMissingBillingType={hasMissingBillingType}
         isLocked={isBillingTypeLocked}
+        isFocused={isFocused}
+        onUpdate={onUpdate}
+        onTab={handleTab}
+      />
+    );
+  }
+
+  if (field === "nfReceived") {
+    const isFocused = editingCell?.id === item.id && editingCell?.field === "nfReceived";
+
+    return (
+      <NfReceivedCell
+        item={item}
+        isLocked={isLocked}
         isFocused={isFocused}
         onUpdate={onUpdate}
         onTab={handleTab}

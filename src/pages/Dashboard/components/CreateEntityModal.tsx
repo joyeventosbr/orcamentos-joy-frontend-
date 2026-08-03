@@ -8,6 +8,8 @@ interface CreateEntityModalProps {
   title: string;
   placeholder: string;
   submitLabel: string;
+  submittingLabel?: string;
+  initialName?: string;
   onCancel: () => void;
   onSubmit: (name: string) => void | Promise<void>;
 }
@@ -16,6 +18,8 @@ export function CreateEntityModal({
   title,
   placeholder,
   submitLabel,
+  submittingLabel = "Criando...",
+  initialName = "",
   onCancel,
   onSubmit,
 }: CreateEntityModalProps) {
@@ -25,7 +29,7 @@ export function CreateEntityModal({
     formState: { errors, isSubmitting },
   } = useForm<EntityFormValues>({
     resolver: zodResolver(entitySchema),
-    defaultValues: { name: "" },
+    defaultValues: { name: initialName },
   });
 
   return (
@@ -53,7 +57,7 @@ export function CreateEntityModal({
             Cancelar
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Criando..." : submitLabel}
+            {isSubmitting ? submittingLabel : submitLabel}
           </Button>
         </div>
       </form>

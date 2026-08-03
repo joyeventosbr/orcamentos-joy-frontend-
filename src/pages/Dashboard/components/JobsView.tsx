@@ -2,17 +2,102 @@ import { Card, CardContent } from "@/src/components/ui/Card/Card";
 import { Button } from "@/src/components/ui/Button/Button";
 import { ApiBudget, Folder } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Briefcase, Calendar, MoreHorizontal, Search } from "lucide-react";
+import { Briefcase, Calendar, MoreHorizontal, Pencil, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface JobsViewProps {
   folders: Folder[];
   budgets: ApiBudget[];
   viewMode: "grid" | "table";
   onSelectFolder: (folderId: string) => void;
+  onRenameFolder: (folder: Folder) => void;
   onClearSearch: () => void;
 }
 
-export function JobsView({ folders, budgets, viewMode, onSelectFolder, onClearSearch }: JobsViewProps) {
+function FolderActionsMenu({
+  folder,
+  isOpen,
+  onToggle,
+  onRename,
+}: {
+  folder: Folder;
+  isOpen: boolean;
+  onToggle: () => void;
+  onRename: (folder: Folder) => void;
+}) {
+  return (
+    <div
+      data-folder-actions
+      className="relative inline-block"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className={`rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 ${
+          isOpen
+            ? "bg-gray-100 text-gray-900 opacity-100"
+            : "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+        }`}
+        aria-label={`Ações da pasta ${folder.name}`}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+      >
+        <MoreHorizontal size={20} />
+      </button>
+      {isOpen && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => onRename(folder)}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            <Pencil size={14} />
+            Renomear
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function JobsView({
+  folders,
+  budgets,
+  viewMode,
+  onSelectFolder,
+  onRenameFolder,
+  onClearSearch,
+}: JobsViewProps) {
+  const [openMenuFolderId, setOpenMenuFolderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const closeMenu = (event: PointerEvent) => {
+      if (!(event.target as Element).closest("[data-folder-actions]")) {
+        setOpenMenuFolderId(null);
+      }
+    };
+    const closeMenuOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMenuFolderId(null);
+    };
+
+    document.addEventListener("pointerdown", closeMenu);
+    document.addEventListener("keydown", closeMenuOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMenu);
+      document.removeEventListener("keydown", closeMenuOnEscape);
+    };
+  }, []);
+
+  const handleRename = (folder: Folder) => {
+    setOpenMenuFolderId(null);
+    onRenameFolder(folder);
+  };
+
   if (folders.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -46,9 +131,14 @@ export function JobsView({ folders, budgets, viewMode, onSelectFolder, onClearSe
                   <div className="w-10 h-10 rounded-lg bg-brand-primary/10 flex items-center justify-center text-brand-primary">
                     <Briefcase size={20} />
                   </div>
-                  <button className="text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreHorizontal size={20} />
-                  </button>
+                  <FolderActionsMenu
+                    folder={folder}
+                    isOpen={openMenuFolderId === folder.id}
+                    onToggle={() =>
+                      setOpenMenuFolderId((current) => current === folder.id ? null : folder.id)
+                    }
+                    onRename={handleRename}
+                  />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-snug">{folder.name}</h3>
                 <p className="text-sm text-gray-500">
@@ -69,7 +159,7 @@ export function JobsView({ folders, budgets, viewMode, onSelectFolder, onClearSe
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
       <table className="w-full text-left text-sm">
         <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-medium">
           <tr>
@@ -97,9 +187,14 @@ export function JobsView({ folders, budgets, viewMode, onSelectFolder, onClearSe
                   {format(new Date(folder.createdAt), "dd/MM/yyyy")}
                 </td>
                 <td className="px-6 py-4">
-                  <button className="text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreHorizontal size={20} />
-                  </button>
+                  <FolderActionsMenu
+                    folder={folder}
+                    isOpen={openMenuFolderId === folder.id}
+                    onToggle={() =>
+                      setOpenMenuFolderId((current) => current === folder.id ? null : folder.id)
+                    }
+                    onRename={handleRename}
+                  />
                 </td>
               </tr>
             );

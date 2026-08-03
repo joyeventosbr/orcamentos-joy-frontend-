@@ -1,7 +1,8 @@
 import { BudgetBillingType, BudgetItem } from "@/src/types";
+import { calculateGrossUpTax, toRateDecimal } from "@/src/lib/profitability";
 import { useMemo } from "react";
 
-const JOY_INVOICE_TAX_RATE = 0.18;
+const DEFAULT_JOY_INVOICE_TAX_PERCENT = 18;
 
 export type BillingSummaryKey = "client" | "joy" | "joyInvoiceTax" | "optional" | "excluded" | "unfilled";
 
@@ -38,7 +39,10 @@ const getBillingSummaryKey = (billingType: BudgetItem["billingType"]): BillingSu
   return billingTypeToSummaryKey[billingType];
 };
 
-export function useBudgetBillingSummary(items: BudgetItem[]): BudgetBillingSummary {
+export function useBudgetBillingSummary(
+  items: BudgetItem[],
+  taxNfPercent = DEFAULT_JOY_INVOICE_TAX_PERCENT,
+): BudgetBillingSummary {
   return useMemo(() => {
     const summaryByKey: Record<BillingSummaryKey, BillingSummaryMetric> = {
       client: {
@@ -92,7 +96,10 @@ export function useBudgetBillingSummary(items: BudgetItem[]): BudgetBillingSumma
       summaryByKey[key].itemCount += 1;
 
       if (item.billingType === "VIA NF") {
-        summaryByKey.joyInvoiceTax.amount += item.total * JOY_INVOICE_TAX_RATE;
+        summaryByKey.joyInvoiceTax.amount += calculateGrossUpTax(
+          item.total,
+          toRateDecimal(taxNfPercent),
+        );
         summaryByKey.joyInvoiceTax.itemCount += 1;
       }
     });
@@ -130,5 +137,5 @@ export function useBudgetBillingSummary(items: BudgetItem[]): BudgetBillingSumma
       unfilledAmount: summaryByKey.unfilled.amount,
       unfilledItemCount: summaryByKey.unfilled.itemCount,
     };
-  }, [items]);
+  }, [items, taxNfPercent]);
 }

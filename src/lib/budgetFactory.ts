@@ -29,6 +29,7 @@ export function createBudgetItem(
     percentBV: 0,
     percentNfBV: undefined,
     percentNfOver: 0,
+    nfReceived: false,
     ...overrides,
   };
 }
