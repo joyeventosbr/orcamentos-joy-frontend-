@@ -17,16 +17,24 @@ import { usePaymentScheduleSummary } from "@/src/hooks/usePaymentScheduleSummary
 import { ProfitabilityCategory, useProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { createBudgetItem, recalculateBudgetItemTotal, recalculateBudgetTotal } from "@/src/lib/budgetFactory";
 import { buildStableGroupedItems } from "@/src/lib/budgetGroupedItems";
-import { DEFAULT_PROFITABILITY_RATES } from "@/src/lib/profitabilityRates";
+import { isBudgetApproved } from "@/src/lib/budgetStatus";
 import {
   getBudgetApprovalError,
   getProfitabilityApprovalError,
   IBudgetValidationResult,
   validateBudget,
 } from "@/src/lib/budgetValidation";
-import { isBudgetApproved } from "@/src/lib/budgetStatus";
+import { resolveTaxNfFactor } from "@/src/lib/profitability";
+import { DEFAULT_PROFITABILITY_RATES } from "@/src/lib/profitabilityRates";
 import { buildStableProfitabilityCategoryMap } from "@/src/lib/stableProfitabilityMap";
-import { BUDGET_CATEGORIES, Budget, BudgetCategory, BudgetItem, HonorariumPercentage, isInternalServiceCategory } from "@/src/types";
+import {
+  Budget,
+  BUDGET_CATEGORIES,
+  BudgetCategory,
+  BudgetItem,
+  HonorariumPercentage,
+  isInternalServiceCategory,
+} from "@/src/types";
 import { BulkUpdateBudgetLinesRequest, UpdateBudgetRequest } from "@/src/types/api.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -115,8 +123,8 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
 
   // --- Summaries ---
 
-  const taxNfPercent = budget?.taxNf ?? 18;
-  const taxNfRate = taxNfPercent / 100;
+  const taxNfFactor = resolveTaxNfFactor(budget?.taxNf);
+  const taxNfRate = taxNfFactor > 0 ? 1 - taxNfFactor : 0;
   const profitabilityRates = useMemo(
     () => ({
       ...DEFAULT_PROFITABILITY_RATES,
@@ -125,7 +133,8 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     }),
     [taxNfRate],
   );
-  const billingSummary = useBudgetBillingSummary(primaryBudgetItems, taxNfPercent);
+
+  const billingSummary = useBudgetBillingSummary(primaryBudgetItems, taxNfRate);
   const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
   const honorariumPercentage = budget?.honorariumPercentage ?? 10;
   const prazoDias = Number(budget?.deadline) || 0;
@@ -138,7 +147,7 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     fatViaJoy,
     antecipadoCliente,
     prazoDias,
-    taxNfPercent,
+    taxNfRate,
   );
   const profitabilitySummary = useProfitabilitySummary({
     primaryItems: primaryBudgetItems,
@@ -388,7 +397,15 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     await refreshBudgetCaches(queryClient, budgetId);
     toast.success("Orçamento enviado para Produção.");
     return created.id;
-  }, [budget, budgetId, profitabilitySummary.rentabilidadeProd, isAdmin, saveBudget, approveToProductionMutation, queryClient]);
+  }, [
+    budget,
+    budgetId,
+    profitabilitySummary.rentabilidadeProd,
+    isAdmin,
+    saveBudget,
+    approveToProductionMutation,
+    queryClient,
+  ]);
 
   return {
     budget,

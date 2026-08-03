@@ -76,6 +76,18 @@ export function toRateDecimal(percentValue: number): number {
 }
 
 /**
+ * Resolve o fator/divisor NF gravado pela API. O formato atual é 0.82; o
+ * formato percentual legado (18) também é aceito para orçamentos antigos.
+ */
+export function resolveTaxNfFactor(apiValue: number | null | undefined): number {
+  const value = Number(apiValue);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  if (value < 1) return value;
+  if (value < 100) return 1 - value / 100;
+  return 0;
+}
+
+/**
  * Calcula somente o acréscimo necessário para que a alíquota incida sobre o
  * valor final da nota. Ex.: 100 / (1 - 0,18) - 100 = 21,95.
  */

@@ -1,7 +1,7 @@
 import type { Worksheet } from "exceljs";
 
 import { Budget, BudgetItem } from "@/src/types";
-import { resolvePercentNfBV } from "@/src/lib/profitability";
+import { resolvePercentNfBV, resolveTaxNfFactor } from "@/src/lib/profitability";
 
 /**
  * Exporta um orçamento para um arquivo .xlsx idêntico à planilha BASE da Joy.
@@ -260,11 +260,11 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   // --- 6. Coluna "120 dias" (existe no sistema, não no template). ---
   applyPayment120Column(ws, setFormula, finalFirst, offsetSection1, offsetTotal);
 
-  // Imposto NF: usa a % do próprio orçamento (snapshot). Number() converte caso a
-  // API entregue o valor como string ("18"). 18% só como último fallback.
+  // O fator NF vem do snapshot da API. No formato atual, 0.82 é usado
+  // diretamente como divisor; o formato percentual legado também é aceito.
   const taxNfValue = Number(budget.taxNf);
   const taxNf = Number.isFinite(taxNfValue) && taxNfValue > 0 ? taxNfValue : 18;
-  applyTaxNfFormulas(setFormula, taxNf, offsetSection1, offsetTotal);
+  applyTaxNfFormulas(setFormula, taxNf, resolveTaxNfFactor(taxNf), offsetSection1, offsetTotal);
 
   const lastRow = 270 + offsetTotal;
 
@@ -382,12 +382,13 @@ function applyPayment120Column(
 }
 
 /**
- * Escreve as fórmulas de gross-up do imposto NF usando a % do PRÓPRIO orçamento
- * (`budget.taxNf`). Retorna somente o acréscimo: base / (1 - taxa) - base.
+ * Escreve as fórmulas de gross-up com o fator NF recebido da API.
+ * Retorna somente o acréscimo: base / fator - base.
  */
 function applyTaxNfFormulas(
   setFormula: (row: number, col: number, formula: string) => void,
   taxNf: number,
+  taxNfFactor: number,
   o1: number,
   O: number,
 ): void {
@@ -399,10 +400,9 @@ function applyTaxNfFormulas(
   const r264 = 264 + O;
   const r265 = 265 + O;
   const r266 = 266 + O;
-  const taxFactor = `(1-${taxNf}%)`;
   const invoiceBase = `SUMIF($D12:$D${s1last},"VIA NF",I12:I${s1last})`;
-  setFormula(r207, COL.H_UNIT, `((${invoiceBase})/${taxFactor})-(${invoiceBase})`);
-  setFormula(r252, COL.I_TOTAL, `(I${r251}/${taxFactor})-I${r251}`);
+  setFormula(r207, COL.H_UNIT, `((${invoiceBase})/${taxNfFactor})-(${invoiceBase})`);
+  setFormula(r252, COL.I_TOTAL, `(I${r251}/${taxNfFactor})-I${r251}`);
   setFormula(r265, COL.T_SUPPLIER_VALUE, `T${r263}/100*${taxNf}`);
   setFormula(r266, COL.T_SUPPLIER_VALUE, `T${r264}/100*${taxNf}`);
 }

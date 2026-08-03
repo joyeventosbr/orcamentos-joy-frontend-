@@ -1,7 +1,7 @@
 import { BillingSummaryCard } from "./BillingSummaryCard";
 import { InternalServicesSummaryCard } from "./InternalServicesSummaryCard";
 import { PaymentScheduleSummaryCard } from "./PaymentScheduleSummaryCard";
-import { formatCurrencyBRL, formatTaxNfPercent } from "@/src/lib/formatters";
+import { formatCurrencyBRL, formatTaxNfFactor } from "@/src/lib/formatters";
 import { BudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
 import { PaymentScheduleTotals } from "@/src/hooks/usePaymentScheduleSummary";
 import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
@@ -51,10 +51,10 @@ export function BudgetSummaryPanel({
         <div className="border-b border-gray-100 px-7 py-4">
           <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
             <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Taxa NF (%)</div>
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Fator NF</div>
               <div className="mt-0.5 text-[11px] text-slate-400">Congelada na criação do orçamento</div>
             </div>
-            <div className="text-base font-black tabular-nums text-slate-900">{formatTaxNfPercent(taxNf)}</div>
+            <div className="text-base font-black tabular-nums text-slate-900">{formatTaxNfFactor(taxNf)}</div>
           </div>
         </div>
 
