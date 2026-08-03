@@ -14,4 +14,7 @@ export const authReq = {
 
   listUsers: () =>
     apiClient.get<AuthUser[]>(API_ENDPOINTS.auth.users).then((r) => r.data),
+
+  deleteUser: (id: string) =>
+    apiClient.delete(API_ENDPOINTS.auth.deleteUser(id)).then(() => undefined),
 };

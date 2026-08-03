@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
     register: "/auth/register",
     registerAdmin: "/auth/register-admin",
     users: "/auth/users",
+    deleteUser: (id: string) => `/auth/users/${id}`,
   },
   customers: {
     list: "/customers",

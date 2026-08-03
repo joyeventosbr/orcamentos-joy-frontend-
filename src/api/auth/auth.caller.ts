@@ -42,3 +42,14 @@ export function useRegisterAdminMutation() {
     },
   });
 }
+
+export function useDeleteUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: authKeys.mutations.deleteUser,
+    mutationFn: (id: string) => authReq.deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.queries.users });
+    },
+  });
+}
