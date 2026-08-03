@@ -60,7 +60,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const deleteCustomerMutation = useMutation({
     mutationFn: customersReq.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: customersKeys.queries.list }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: customersKeys.queries.list }),
+        queryClient.invalidateQueries({ queryKey: foldersKeys.queries.list }),
+        invalidateBudgetList(queryClient),
+      ]);
+    },
   });
 
   const updateCustomerMutation = useMutation({
@@ -80,7 +86,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const deleteFolderMutation = useMutation({
     mutationFn: foldersReq.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: foldersKeys.queries.list }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: foldersKeys.queries.list }),
+        invalidateBudgetList(queryClient),
+      ]);
+    },
   });
 
   const createBudgetMutation = useMutation({

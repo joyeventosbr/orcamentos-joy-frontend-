@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/src/components/ui/Card/Card";
 import { Button } from "@/src/components/ui/Button/Button";
+import { usePermissions } from "@/src/hooks/use-permissions";
 import { Customer, Folder } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Calendar, FolderOpen, MoreHorizontal, Pencil, Users } from "lucide-react";
+import { Calendar, FolderOpen, MoreHorizontal, Pencil, Trash2, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface ClientsViewProps {
@@ -11,6 +12,7 @@ interface ClientsViewProps {
   viewMode: "grid" | "table";
   onSelectCustomer: (customerId: string) => void;
   onRenameCustomer: (customer: Customer) => void;
+  onDeleteCustomer: (customer: Customer) => void;
   onClearSearch: () => void;
 }
 
@@ -19,11 +21,15 @@ function CustomerActionsMenu({
   isOpen,
   onToggle,
   onRename,
+  onDelete,
+  canDelete,
 }: {
   customer: Customer;
   isOpen: boolean;
   onToggle: () => void;
   onRename: (customer: Customer) => void;
+  onDelete: (customer: Customer) => void;
+  canDelete: boolean;
 }) {
   return (
     <div
@@ -59,6 +65,17 @@ function CustomerActionsMenu({
             <Pencil size={14} />
             Renomear
           </button>
+          {canDelete && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => onDelete(customer)}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <Trash2 size={14} />
+              Excluir
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -71,8 +88,10 @@ export function ClientsView({
   viewMode,
   onSelectCustomer,
   onRenameCustomer,
+  onDeleteCustomer,
   onClearSearch,
 }: ClientsViewProps) {
+  const { canDeleteCustomers } = usePermissions();
   const [openMenuCustomerId, setOpenMenuCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,6 +115,11 @@ export function ClientsView({
   const handleRename = (customer: Customer) => {
     setOpenMenuCustomerId(null);
     onRenameCustomer(customer);
+  };
+
+  const handleDelete = (customer: Customer) => {
+    setOpenMenuCustomerId(null);
+    onDeleteCustomer(customer);
   };
 
   if (customers.length === 0) {
@@ -138,6 +162,8 @@ export function ClientsView({
                       setOpenMenuCustomerId((current) => current === customer.id ? null : customer.id)
                     }
                     onRename={handleRename}
+                    onDelete={handleDelete}
+                    canDelete={canDeleteCustomers}
                   />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-snug">{customer.name}</h3>
@@ -194,6 +220,8 @@ export function ClientsView({
                       setOpenMenuCustomerId((current) => current === customer.id ? null : customer.id)
                     }
                     onRename={handleRename}
+                    onDelete={handleDelete}
+                    canDelete={canDeleteCustomers}
                   />
                 </td>
               </tr>

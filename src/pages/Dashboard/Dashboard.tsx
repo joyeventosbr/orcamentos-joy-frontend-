@@ -12,6 +12,8 @@ import { ClientsView } from "./components/ClientsView";
 import { JobsView } from "./components/JobsView";
 import { BudgetsView } from "./components/BudgetsView";
 import { DeleteBudgetModal } from "./components/DeleteBudgetModal";
+import { DeleteCustomerModal } from "./components/DeleteCustomerModal";
+import { DeleteFolderModal } from "./components/DeleteFolderModal";
 import { ApiBudget, Customer, Folder } from "@/src/types/api.types";
 
 type DashboardLevel = "customers" | "folders" | "budgets";
@@ -30,6 +32,10 @@ export function Dashboard() {
   const [budgetToDelete, setBudgetToDelete] = useState<ApiBudget | null>(null);
   const [customerToRename, setCustomerToRename] = useState<Customer | null>(null);
   const [folderToRename, setFolderToRename] = useState<Folder | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
+  const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
+  const [isDeletingFolder, setIsDeletingFolder] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const {
@@ -39,8 +45,10 @@ export function Dashboard() {
     isLoading,
     addCustomer,
     renameCustomer,
+    deleteCustomer,
     addFolder,
     renameFolder,
+    deleteFolder,
     addBudget,
     copyBudget,
     deleteBudget,
@@ -138,6 +146,53 @@ export function Dashboard() {
     }
   };
 
+  const handleRequestDeleteCustomer = (customer: Customer) => {
+    setDeleteError(null);
+    setCustomerToDelete(customer);
+  };
+
+  const handleConfirmDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+    setIsDeletingCustomer(true);
+    setDeleteError(null);
+    try {
+      await deleteCustomer(customerToDelete.id);
+      toast.success("Cliente excluído com sucesso!");
+      setCustomerToDelete(null);
+      if (currentCustomerId === customerToDelete.id) {
+        setCurrentCustomerId(null);
+        setCurrentFolderId(null);
+      }
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Falha ao excluir cliente");
+    } finally {
+      setIsDeletingCustomer(false);
+    }
+  };
+
+  const handleRequestDeleteFolder = (folder: Folder) => {
+    setDeleteError(null);
+    setFolderToDelete(folder);
+  };
+
+  const handleConfirmDeleteFolder = async () => {
+    if (!folderToDelete) return;
+    setIsDeletingFolder(true);
+    setDeleteError(null);
+    try {
+      await deleteFolder(folderToDelete.id);
+      toast.success("Pasta excluída com sucesso!");
+      setFolderToDelete(null);
+      if (currentFolderId === folderToDelete.id) {
+        setCurrentFolderId(null);
+      }
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Falha ao excluir pasta");
+    } finally {
+      setIsDeletingFolder(false);
+    }
+  };
+
   const handleDuplicateBudget = async (budgetId: string) => {
     setDuplicatingBudgetId(budgetId);
     try {
@@ -215,6 +270,16 @@ export function Dashboard() {
   const newButtonLabel =
     level === "customers" ? "Novo Cliente" : level === "folders" ? "Nova Pasta" : "Novo Orçamento";
 
+  const customerDeleteFolderCount = customerToDelete
+    ? folders.filter((folder) => folder.customerId === customerToDelete.id).length
+    : 0;
+  const customerDeleteBudgetCount = customerToDelete
+    ? budgets.filter((budget) => budget.customerId === customerToDelete.id).length
+    : 0;
+  const folderDeleteBudgetCount = folderToDelete
+    ? budgets.filter((budget) => budget.folderId === folderToDelete.id).length
+    : 0;
+
   if (isLoading) {
     return null;
   }
@@ -266,6 +331,7 @@ export function Dashboard() {
             viewMode={viewMode}
             onSelectCustomer={handleSelectCustomer}
             onRenameCustomer={setCustomerToRename}
+            onDeleteCustomer={handleRequestDeleteCustomer}
             onClearSearch={() => setSearchQuery("")}
           />
         )}
@@ -276,6 +342,7 @@ export function Dashboard() {
             viewMode={viewMode}
             onSelectFolder={handleSelectFolder}
             onRenameFolder={setFolderToRename}
+            onDeleteFolder={handleRequestDeleteFolder}
             onClearSearch={() => setSearchQuery("")}
           />
         )}
@@ -301,6 +368,35 @@ export function Dashboard() {
           onConfirm={() => void handleConfirmDeleteBudget()}
           onCancel={() => {
             setBudgetToDelete(null);
+            setDeleteError(null);
+          }}
+        />
+      )}
+
+      {customerToDelete && (
+        <DeleteCustomerModal
+          customerName={customerToDelete.name}
+          folderCount={customerDeleteFolderCount}
+          budgetCount={customerDeleteBudgetCount}
+          error={deleteError}
+          isDeleting={isDeletingCustomer}
+          onConfirm={() => void handleConfirmDeleteCustomer()}
+          onCancel={() => {
+            setCustomerToDelete(null);
+            setDeleteError(null);
+          }}
+        />
+      )}
+
+      {folderToDelete && (
+        <DeleteFolderModal
+          folderName={folderToDelete.name}
+          budgetCount={folderDeleteBudgetCount}
+          error={deleteError}
+          isDeleting={isDeletingFolder}
+          onConfirm={() => void handleConfirmDeleteFolder()}
+          onCancel={() => {
+            setFolderToDelete(null);
             setDeleteError(null);
           }}
         />

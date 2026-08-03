@@ -7,6 +7,8 @@ export interface Permissions {
   canManageUsers: boolean;
   canViewEditHistory: boolean;
   canConfigureTax: boolean;
+  canDeleteCustomers: boolean;
+  canDeleteFolders: boolean;
 }
 
 export function usePermissions(): Permissions {
@@ -21,5 +23,7 @@ export function usePermissions(): Permissions {
     canManageUsers: isAdmin,
     canViewEditHistory: isAdmin,
     canConfigureTax: isAdmin,
+    canDeleteCustomers: isAdmin,
+    canDeleteFolders: isAdmin,
   };
 }

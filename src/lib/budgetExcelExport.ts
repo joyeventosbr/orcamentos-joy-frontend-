@@ -273,6 +273,7 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   for (const r of rowsToHide) ws.getRow(r).hidden = true;
   for (const r of emptyCategoryRows) ws.getRow(r).hidden = true;
   removeRedFormatting(ws, lastRow);
+  clearInternalTemplateNotes(ws, offsetTotal);
 
   // --- 8. Bloco de texto do rodapé: quebra de linha + altura para não cortar. ---
   applyFooterTextLayout(ws, offsetTotal);
@@ -424,6 +425,14 @@ function removeRedFormatting(ws: Worksheet, lastRow: number): void {
         cell.font = { ...cell.font, color: { argb: "FF000000" } };
       }
     }
+  }
+}
+
+/** Remove lembretes internos do template (não devem ir no Excel exportado). */
+function clearInternalTemplateNotes(ws: Worksheet, offsetTotal: number): void {
+  // L248, L258, L259 no template base — deslocam com overflow de linhas.
+  for (const original of [248, 258, 259]) {
+    ws.getCell(original + offsetTotal, COL.L_ADVANCE).value = null;
   }
 }
 

@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/src/components/ui/Card/Card";
 import { Button } from "@/src/components/ui/Button/Button";
+import { usePermissions } from "@/src/hooks/use-permissions";
 import { ApiBudget, Folder } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Briefcase, Calendar, MoreHorizontal, Pencil, Search } from "lucide-react";
+import { Briefcase, Calendar, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface JobsViewProps {
@@ -11,6 +12,7 @@ interface JobsViewProps {
   viewMode: "grid" | "table";
   onSelectFolder: (folderId: string) => void;
   onRenameFolder: (folder: Folder) => void;
+  onDeleteFolder: (folder: Folder) => void;
   onClearSearch: () => void;
 }
 
@@ -19,11 +21,15 @@ function FolderActionsMenu({
   isOpen,
   onToggle,
   onRename,
+  onDelete,
+  canDelete,
 }: {
   folder: Folder;
   isOpen: boolean;
   onToggle: () => void;
   onRename: (folder: Folder) => void;
+  onDelete: (folder: Folder) => void;
+  canDelete: boolean;
 }) {
   return (
     <div
@@ -59,6 +65,17 @@ function FolderActionsMenu({
             <Pencil size={14} />
             Renomear
           </button>
+          {canDelete && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => onDelete(folder)}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <Trash2 size={14} />
+              Excluir
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -71,8 +88,10 @@ export function JobsView({
   viewMode,
   onSelectFolder,
   onRenameFolder,
+  onDeleteFolder,
   onClearSearch,
 }: JobsViewProps) {
+  const { canDeleteFolders } = usePermissions();
   const [openMenuFolderId, setOpenMenuFolderId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,6 +115,11 @@ export function JobsView({
   const handleRename = (folder: Folder) => {
     setOpenMenuFolderId(null);
     onRenameFolder(folder);
+  };
+
+  const handleDelete = (folder: Folder) => {
+    setOpenMenuFolderId(null);
+    onDeleteFolder(folder);
   };
 
   if (folders.length === 0) {
@@ -138,6 +162,8 @@ export function JobsView({
                       setOpenMenuFolderId((current) => current === folder.id ? null : folder.id)
                     }
                     onRename={handleRename}
+                    onDelete={handleDelete}
+                    canDelete={canDeleteFolders}
                   />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-snug">{folder.name}</h3>
@@ -194,6 +220,8 @@ export function JobsView({
                       setOpenMenuFolderId((current) => current === folder.id ? null : folder.id)
                     }
                     onRename={handleRename}
+                    onDelete={handleDelete}
+                    canDelete={canDeleteFolders}
                   />
                 </td>
               </tr>
