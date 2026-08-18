@@ -242,7 +242,10 @@ export function BudgetEditor() {
       honorariumBase: editor.billingSummary.honorariumBase,
       honorariumPercentage: editor.honorariumPercentage,
       advancePayment: editor.paymentScheduleSummary.totals.paymentAdvance,
+      isLocked: editor.isLocked,
+      isSaving: editor.isSaving,
       profitabilitySummary: editor.profitabilitySummary,
+      onPlanningChange: (projectedValue: number) => editor.updateBudgetFields({ projectedValue }),
       onHonorariumPercentageChange: editor.updateHonorariumPercentage,
     }),
     [
@@ -253,7 +256,10 @@ export function BudgetEditor() {
       editor.paymentScheduleSummary.totals,
       editor.internalServicesSummary,
       editor.honorariumPercentage,
+      editor.isLocked,
+      editor.isSaving,
       editor.profitabilitySummary,
+      editor.updateBudgetFields,
       editor.updateHonorariumPercentage,
     ],
   );

@@ -156,7 +156,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 </th>
                 <th
                   colSpan={9}
-                  className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-200 text-gray-900"
+                  className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-100 text-gray-800"
                 >
                   Rentabilidade
                 </th>
@@ -245,7 +245,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 </th>
                 <th
                   colSpan={9}
-                  className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-200 text-gray-900"
+                  className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-100 text-gray-800"
                 >
                   Rentabilidade
                 </th>

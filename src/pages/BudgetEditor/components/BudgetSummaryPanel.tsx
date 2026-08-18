@@ -1,11 +1,11 @@
+import { BudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
+import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
+import { PaymentScheduleTotals } from "@/src/hooks/usePaymentScheduleSummary";
+import { formatCurrencyBRL, formatTaxNfFactor } from "@/src/lib/formatters";
+import { HonorariumPercentage } from "@/src/types";
 import { BillingSummaryCard } from "./BillingSummaryCard";
 import { InternalServicesSummaryCard } from "./InternalServicesSummaryCard";
 import { PaymentScheduleSummaryCard } from "./PaymentScheduleSummaryCard";
-import { formatCurrencyBRL, formatTaxNfFactor } from "@/src/lib/formatters";
-import { BudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
-import { PaymentScheduleTotals } from "@/src/hooks/usePaymentScheduleSummary";
-import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
-import { HonorariumPercentage } from "@/src/types";
 
 type InternalServicesSummary = ReturnType<typeof useInternalServicesSummary>;
 
@@ -19,6 +19,9 @@ interface BudgetSummaryPanelProps {
   honorariumBase: number;
   honorariumPercentage: HonorariumPercentage;
   advancePayment: number;
+  isLocked: boolean;
+  isSaving: boolean;
+  onPlanningChange: (value: number) => void;
   onHonorariumPercentageChange: (value: HonorariumPercentage) => void;
 }
 
@@ -32,6 +35,9 @@ export function BudgetSummaryPanel({
   honorariumBase,
   honorariumPercentage,
   advancePayment,
+  isLocked,
+  isSaving,
+  onPlanningChange,
   onHonorariumPercentageChange,
 }: BudgetSummaryPanelProps) {
   return (
@@ -72,6 +78,9 @@ export function BudgetSummaryPanel({
           subtotal={internalServicesSummary.subtotal}
           serviceTax={internalServicesSummary.serviceTax}
           advancePayment={advancePayment}
+          isLocked={isLocked}
+          isSaving={isSaving}
+          onPlanningChange={onPlanningChange}
           onHonorariumPercentageChange={onHonorariumPercentageChange}
         />
       </div>

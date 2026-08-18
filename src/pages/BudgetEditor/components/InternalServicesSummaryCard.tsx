@@ -1,3 +1,4 @@
+import { CurrencyInput } from "@/src/components/ui/CurrencyInput/CurrencyInput";
 import { formatCurrencyBRL } from "@/src/lib/formatters";
 import { HONORARIUM_PERCENTAGE_OPTIONS, HonorariumPercentage } from "@/src/types";
 import { useEffect, useState } from "react";
@@ -12,6 +13,9 @@ interface InternalServicesSummaryCardProps {
   subtotal: number;
   serviceTax: number;
   advancePayment: number;
+  isLocked: boolean;
+  isSaving: boolean;
+  onPlanningChange: (value: number) => void;
   onHonorariumPercentageChange: (value: HonorariumPercentage) => void;
 }
 
@@ -50,6 +54,9 @@ export function InternalServicesSummaryCard({
   subtotal,
   serviceTax,
   advancePayment,
+  isLocked,
+  isSaving,
+  onPlanningChange,
   onHonorariumPercentageChange,
 }: InternalServicesSummaryCardProps) {
   const [draftPercentage, setDraftPercentage] = useState(honorariumPercentage);
@@ -62,7 +69,25 @@ export function InternalServicesSummaryCard({
     <section className="border-b border-gray-100 px-7 py-6">
       <div className="divide-y divide-slate-100">
         <SummaryLine label="Serviços internos" value={servicesTotal} />
-        <SummaryLine label="Planejamento" value={planning} />
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-6 py-2.5">
+          <label htmlFor="planning-value" className="text-sm font-semibold leading-snug text-slate-700">
+            Planejamento
+          </label>
+          {isLocked ? (
+            <div className="shrink-0 text-right text-sm font-bold tabular-nums text-slate-900">
+              {formatCurrencyBRL(planning)}
+            </div>
+          ) : (
+            <CurrencyInput
+              id="planning-value"
+              ariaLabel="Valor de planejamento"
+              value={planning}
+              onValueChange={onPlanningChange}
+              disabled={isSaving}
+              className="h-8 w-44 text-sm font-bold"
+            />
+          )}
+        </div>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-6 py-2.5">
           <div>
             <div className="text-sm font-semibold leading-snug text-slate-700">Honorários</div>

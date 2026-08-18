@@ -1,4 +1,4 @@
-import { Budget, BudgetItem, isInternalServiceCategory } from "@/src/types";
+import { Budget, BudgetItem } from "@/src/types";
 import {
   BillingType,
   BudgetDetail,
@@ -67,6 +67,7 @@ export function mapDetailToBudget(detail: BudgetDetail): Budget {
     location: detail.location ?? "",
     date: detail.eventDate ?? "",
     participants: detail.participants ?? "",
+    projectedValue: detail.projectedValue,
     taxNf: detail.taxNf,
   };
 }
@@ -78,9 +79,7 @@ export function mapLineToItem(line: BudgetLine): BudgetItem {
     itemNumber: `${line.categoryCode}.${line.order}`,
     name: line.name,
     description: line.description,
-    billingType: isInternalServiceCategory(line.categoryCode)
-      ? "VIA NF"
-      : ((line.billingType ?? "") as BudgetItem["billingType"]),
+    billingType: (line.billingType ?? "") as BudgetItem["billingType"],
     quantity: line.quantity,
     days: line.dailyRates,
     unitPrice: line.unitValue,
@@ -178,14 +177,13 @@ export function mapBudgetToUpdateRequest(budget: Budget): UpdateBudgetRequest {
     location: emptyToUndefined(budget.location),
     eventDate: emptyToUndefined(budget.date),
     participants: emptyToUndefined(budget.participants),
+    projectedValue: budget.projectedValue,
     paymentTerm: budget.deadline ? DEADLINE_TO_PAYMENT_TERM[budget.deadline] : undefined,
   };
 }
 
 export function serializeBudgetForDirtyCheck(budget: Budget): string {
-  const items = [...budget.items]
-    .sort((a, b) => a.id.localeCompare(b.id))
-    .map((item) => mapItemToUpdateRequest(item));
+  const items = [...budget.items].sort((a, b) => a.id.localeCompare(b.id)).map((item) => mapItemToUpdateRequest(item));
 
   return JSON.stringify({
     header: mapBudgetToUpdateRequest(budget),
@@ -200,13 +198,9 @@ export function buildBulkRequest(
 ): BulkUpdateBudgetLinesRequest {
   const currentIds = new Set(currentItems.map((i) => i.id));
 
-  const toCreate = currentItems
-    .filter((i) => !originalIds.has(i.id))
-    .map((i) => mapItemToCreateRequest(i, budgetId));
+  const toCreate = currentItems.filter((i) => !originalIds.has(i.id)).map((i) => mapItemToCreateRequest(i, budgetId));
 
-  const toUpdate = currentItems
-    .filter((i) => originalIds.has(i.id))
-    .map((i) => mapItemToUpdateRequest(i));
+  const toUpdate = currentItems.filter((i) => originalIds.has(i.id)).map((i) => mapItemToUpdateRequest(i));
 
   const toDelete = [...originalIds].filter((id) => !currentIds.has(id));
 

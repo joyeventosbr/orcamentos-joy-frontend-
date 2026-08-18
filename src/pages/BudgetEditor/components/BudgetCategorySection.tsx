@@ -64,7 +64,7 @@ const BudgetItemRow = memo(
         <td className="align-top p-0">
           <BudgetTableCell {...cellProps} item={item} field="unitPrice" type="number" align="right" />
         </td>
-        <td className="align-middle px-3 py-2 text-right font-semibold text-gray-900 bg-slate-50/50 relative">
+        <td className="align-middle px-3 py-2 text-right font-semibold text-gray-900 bg-white relative">
           {formatCurrencyBRL(item.total)}
         </td>
         <td className="align-top p-0">
@@ -85,31 +85,31 @@ const BudgetItemRow = memo(
         <td className="align-top p-0">
           <BudgetTableCell {...cellProps} item={item} field="payment120d" type="number" align="right" />
         </td>
-        <td className="align-top p-0 border-l-2 border-gray-200">
+        <td className="align-top p-0 border-l-2 border-gray-200 bg-white">
           <BudgetTableCell {...cellProps} item={item} field="fornecedorName" type="text" />
         </td>
-        <td className="align-top p-0">
+        <td className="align-top p-0 bg-white">
           <BudgetTableCell {...cellProps} item={item} field="fornecedorValue" type="number" align="right" />
         </td>
-        <td className="align-top p-0">
+        <td className="align-top p-0 bg-white">
           <BudgetTableCell {...cellProps} item={item} field="percentBV" type="number" align="right" />
         </td>
-        <td className="align-top p-0">
+        <td className="align-top p-0 bg-white">
           <BudgetTableCell {...cellProps} item={item} field="percentNfBV" type="number" align="right" />
         </td>
-        <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
+        <td className="align-middle px-3 py-2 text-right text-slate-600 bg-white">
           {formatCurrencyBRL(profitabilityMetrics.rsBV)}
         </td>
-        <td className="align-top p-0">
+        <td className="align-top p-0 bg-white">
           <BudgetTableCell {...cellProps} item={item} field="percentNfOver" type="number" align="right" />
         </td>
-        <td className="align-middle px-3 py-2 text-right text-slate-600 bg-slate-50/50">
+        <td className="align-middle px-3 py-2 text-right text-slate-600 bg-white">
           {formatCurrencyBRL(profitabilityMetrics.over)}
         </td>
-        <td className="align-middle px-3 py-2 text-right font-semibold text-slate-900 bg-gray-100/50">
+        <td className="align-middle px-3 py-2 text-right font-semibold text-slate-900 bg-white">
           {formatCurrencyBRL(profitabilityMetrics.valorReal)}
         </td>
-        <td className="align-middle p-0">
+        <td className="align-middle p-0 bg-white">
           <BudgetTableCell {...cellProps} item={item} field="nfReceived" />
         </td>
         <td className="align-middle text-center p-0 border-l-2 border-slate-100">
@@ -201,29 +201,31 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
       >
         <td colSpan={24} className="p-0 relative">
           <div
-            className={`flex items-center px-0 py-2 cursor-pointer transition-colors w-full h-full ${isInternalServicesCategory ? "hover:bg-zinc-900" : "hover:bg-gray-200"}`}
+            className="flex w-full h-full cursor-pointer items-center px-0 py-2"
             onClick={() => onToggle(category.id)}
           >
             <div className="flex w-full items-center justify-between">
               <div
-                className={`sticky left-0 z-10 flex w-[280px] min-w-[280px] self-stretch items-center px-2 pr-4 shadow-[2px_0_0_0_rgb(203_213_225)] ${isInternalServicesCategory ? "bg-black" : "bg-gray-100"}`}
+                className={`sticky left-0 z-10 flex w-[400px] min-w-[400px] self-stretch items-center px-2 pr-4 shadow-[2px_0_0_0_rgb(203_213_225)] ${isInternalServicesCategory ? "bg-black" : "bg-gray-100"}`}
               >
                 <button
                   className={`px-1 ${isInternalServicesCategory ? "text-white/70 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
                 >
                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                 </button>
-                <span className="font-semibold text-[13px] ml-1 tracking-wide whitespace-nowrap">
-                  {category.name}
-                </span>
+                <div className="ml-2 min-w-0 py-0.5">
+                  <span className="block whitespace-nowrap font-semibold text-[15px] leading-5 tracking-wide">
+                    {category.name}
+                  </span>
+                  <span
+                    className={`mt-0.5 block text-xs font-medium whitespace-nowrap ${isInternalServicesCategory ? "text-white/70" : "text-gray-500"}`}
+                  >
+                    Total: <span className={isInternalServicesCategory ? "text-white" : "text-gray-800"}>{formatCurrencyBRL(categoryTotal)}</span>
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 px-2">
-                <div
-                  className={`flex items-center px-3 py-1 border shadow-sm rounded text-sm font-bold whitespace-nowrap ${isInternalServicesCategory ? "border-white/20 bg-white/10 text-white" : "bg-white border-gray-200 text-gray-900"}`}
-                >
-                  {formatCurrencyBRL(categoryTotal)}
-                </div>
                 {!isLocked && (
                   <>
                     <button

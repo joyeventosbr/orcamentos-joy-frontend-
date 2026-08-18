@@ -218,6 +218,8 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   setValue(6, COL.B_NAME, budget.participants ?? "");
   // Honorários: sempre do orçamento (padrão 10%, igual ao sistema — não o 15% do template).
   setValue(248 + offsetTotal, COL.F_DAYS, (budget.honorariumPercentage ?? 10) / 100);
+  // Planejamento é persistido pela API como projectedValue.
+  setValue(247 + offsetTotal, COL.I_TOTAL, budget.projectedValue);
 
   // --- 3. Itens (posição sequencial). ---
   for (const categoryId of allCategories) {
@@ -290,7 +292,7 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   // --- 10. Download. ---
   const out = await workbook.xlsx.writeBuffer();
   const { saveAs } = await import("file-saver");
-  const suffix = variant === "internal" ? " (interna)" : " (cliente)";
+  const suffix = variant === "internal" ? " (INTERNA)" : " (COMERCIAL)";
   // Data/hora no nome garante arquivo único por exportação (evita abrir um download antigo).
   const n = new Date();
   const p = (v: number) => String(v).padStart(2, "0");

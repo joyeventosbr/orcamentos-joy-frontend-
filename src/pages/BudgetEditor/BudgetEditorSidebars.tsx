@@ -19,7 +19,10 @@ export type BudgetEditorSidebarsProps = {
   honorariumBase: number;
   honorariumPercentage: HonorariumPercentage;
   advancePayment: number;
+  isLocked: boolean;
+  isSaving: boolean;
   profitabilitySummary: ProfitabilitySummary;
+  onPlanningChange: (value: number) => void;
   onHonorariumPercentageChange: (value: HonorariumPercentage) => void;
 };
 
@@ -33,7 +36,10 @@ export const BudgetEditorSidebars = memo(function BudgetEditorSidebars({
   honorariumBase,
   honorariumPercentage,
   advancePayment,
+  isLocked,
+  isSaving,
   profitabilitySummary,
+  onPlanningChange,
   onHonorariumPercentageChange,
 }: BudgetEditorSidebarsProps) {
   return (
@@ -48,6 +54,9 @@ export const BudgetEditorSidebars = memo(function BudgetEditorSidebars({
         honorariumBase={honorariumBase}
         honorariumPercentage={honorariumPercentage}
         advancePayment={advancePayment}
+        isLocked={isLocked}
+        isSaving={isSaving}
+        onPlanningChange={onPlanningChange}
         onHonorariumPercentageChange={onHonorariumPercentageChange}
       />
       <ProfitabilitySidebar isOpen={activeSidebar === "profitability"} summary={profitabilitySummary} />

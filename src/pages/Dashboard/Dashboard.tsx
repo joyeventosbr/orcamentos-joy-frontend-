@@ -1,20 +1,20 @@
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAppData } from "../../context/AppDataContext";
 import { useDashboardFilters } from "@/src/hooks/useDashboardFilters";
-import { BUDGET_FOLDER_OPTIONS, BudgetFolder } from "@/src/types";
 import { buildDashboardReturnState, DashboardReturnState } from "@/src/lib/dashboardNavigation";
+import { BUDGET_FOLDER_OPTIONS, BudgetFolder } from "@/src/types";
+import { ApiBudget, Customer, Folder } from "@/src/types/api.types";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAppData } from "../../context/AppDataContext";
+import { BudgetsView } from "./components/BudgetsView";
+import { ClientsView } from "./components/ClientsView";
 import { CreateEntityModal } from "./components/CreateEntityModal";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardToolbar } from "./components/DashboardToolbar";
-import { ClientsView } from "./components/ClientsView";
-import { JobsView } from "./components/JobsView";
-import { BudgetsView } from "./components/BudgetsView";
 import { DeleteBudgetModal } from "./components/DeleteBudgetModal";
 import { DeleteCustomerModal } from "./components/DeleteCustomerModal";
 import { DeleteFolderModal } from "./components/DeleteFolderModal";
-import { ApiBudget, Customer, Folder } from "@/src/types/api.types";
+import { JobsView } from "./components/JobsView";
 
 type DashboardLevel = "customers" | "folders" | "budgets";
 
@@ -54,16 +54,15 @@ export function Dashboard() {
     deleteBudget,
   } = useAppData();
 
-  const { currentCustomer, currentFolder, filteredCustomers, filteredFolders, filteredBudgets } =
-    useDashboardFilters({
-      customers,
-      folders,
-      budgets,
-      currentCustomerId,
-      currentFolderId,
-      searchQuery,
-      budgetFolderTab: currentFolderId ? budgetFolderTab : undefined,
-    });
+  const { currentCustomer, currentFolder, filteredCustomers, filteredFolders, filteredBudgets } = useDashboardFilters({
+    customers,
+    folders,
+    budgets,
+    currentCustomerId,
+    currentFolderId,
+    searchQuery,
+    budgetFolderTab: currentFolderId ? budgetFolderTab : undefined,
+  });
 
   const level: DashboardLevel = currentFolderId ? "budgets" : currentCustomerId ? "folders" : "customers";
 
@@ -242,13 +241,18 @@ export function Dashboard() {
     }
   };
 
-  const handleCreateEntity = async (name: string) => {
+  const handleCreateEntity = async (name: string, projectedValue?: number) => {
     if (level === "customers") {
       await addCustomer(name);
     } else if (level === "folders" && currentCustomerId) {
       await addFolder(currentCustomerId, name);
     } else if (level === "budgets" && currentFolderId && currentCustomerId) {
-      const budget = await addBudget({ folderId: currentFolderId, customerId: currentCustomerId, name });
+      const budget = await addBudget({
+        folderId: currentFolderId,
+        customerId: currentCustomerId,
+        name,
+        projectedValue: projectedValue ?? 0,
+      });
       setIsModalOpen(false);
       navigateToEditor(budget.id);
       return;
@@ -267,8 +271,7 @@ export function Dashboard() {
     }
   };
 
-  const newButtonLabel =
-    level === "customers" ? "Novo Cliente" : level === "folders" ? "Nova Pasta" : "Novo Orçamento";
+  const newButtonLabel = level === "customers" ? "Novo Cliente" : level === "folders" ? "Nova Pasta" : "Novo Orçamento";
 
   const customerDeleteFolderCount = customerToDelete
     ? folders.filter((folder) => folder.customerId === customerToDelete.id).length
@@ -407,6 +410,7 @@ export function Dashboard() {
           title={modalConfig.title}
           placeholder={modalConfig.placeholder}
           submitLabel={modalConfig.submitLabel}
+          includeProjectedValue={level === "budgets"}
           onCancel={() => setIsModalOpen(false)}
           onSubmit={handleCreateEntity}
         />

@@ -2,6 +2,7 @@ import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Card, CardContent } from "@/src/components/ui/Card/Card";
 import { usePermissions } from "@/src/hooks/use-permissions";
+import { formatCurrencyBRL } from "@/src/lib/formatters";
 import {
   BUDGET_STATUS_LABEL,
   canDeleteBudget,
@@ -12,7 +13,7 @@ import {
 import { DashboardReturnState, buildDashboardReturnState } from "@/src/lib/dashboardNavigation";
 import { ApiBudget } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Calendar, Copy, FileText, MoreHorizontal, Search, Trash2, UserRound } from "lucide-react";
+import { Calendar, Copy, FileText, MoreHorizontal, Search, Target, Trash2, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface BudgetsViewProps {
@@ -124,9 +125,7 @@ export function BudgetsView({
           <Search size={24} />
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhum orçamento encontrado</h3>
-        <p className="text-gray-500 max-w-sm mb-6">
-          Não encontramos nenhum orçamento nesta pasta.
-        </p>
+        <p className="text-gray-500 max-w-sm mb-6">Não encontramos nenhum orçamento nesta pasta.</p>
         <Button onClick={onClearFilters} variant="outline">
           Limpar filtros
         </Button>
@@ -158,17 +157,15 @@ export function BudgetsView({
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-snug">{budget.name}</h3>
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <Badge variant={getStatusBadgeVariant(budget.status)}>
-                  {BUDGET_STATUS_LABEL[budget.status]}
-                </Badge>
-                {shouldShowBudgetVersion(budget) && (
-                  <span className="text-xs text-gray-500">v{budget.version}</span>
-                )}
+                <Badge variant={getStatusBadgeVariant(budget.status)}>{BUDGET_STATUS_LABEL[budget.status]}</Badge>
+                {shouldShowBudgetVersion(budget) && <span className="text-xs text-gray-500">v{budget.version}</span>}
               </div>
-              {budget.jobDescription && (
-                <p className="text-sm text-gray-500 truncate">{budget.jobDescription}</p>
-              )}
+              {budget.jobDescription && <p className="text-sm text-gray-500 truncate">{budget.jobDescription}</p>}
               <div className="mt-auto pt-6 space-y-2 text-sm">
+                <div className="flex items-center gap-1.5 font-medium text-gray-700">
+                  <Target size={14} />
+                  Planejamento: {formatCurrencyBRL(budget.projectedValue)}
+                </div>
                 <div className="flex items-center gap-1.5 text-gray-500">
                   <Calendar size={14} />
                   {format(new Date(getBudgetDisplayDate(budget)), "dd/MM/yyyy")}
@@ -183,8 +180,7 @@ export function BudgetsView({
                   <div className="flex items-center gap-1.5 text-gray-400">
                     <UserRound size={13} />
                     <span className="truncate">
-                      Editado por {budget.updatedBy} em{" "}
-                      {format(new Date(getBudgetDisplayDate(budget)), "dd/MM/yyyy")}
+                      Editado por {budget.updatedBy} em {format(new Date(getBudgetDisplayDate(budget)), "dd/MM/yyyy")}
                     </span>
                   </div>
                 )}
@@ -197,16 +193,15 @@ export function BudgetsView({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-left text-sm">
         <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-medium">
           <tr>
             <th className="px-6 py-4 font-medium">Nome do Orçamento</th>
             <th className="px-6 py-4 font-medium">Status</th>
             <th className="px-6 py-4 font-medium">Descrição</th>
-            <th className="px-6 py-4 font-medium">
-              {canViewEditHistory ? "Última Atualização" : "Data de Criação"}
-            </th>
+            <th className="px-6 py-4 font-medium">Planejamento</th>
+            <th className="px-6 py-4 font-medium">{canViewEditHistory ? "Última Atualização" : "Data de Criação"}</th>
             {canViewEditHistory && <th className="px-6 py-4 font-medium">Editado por</th>}
             <th className="px-6 py-4 font-medium w-10"></th>
           </tr>
@@ -225,18 +220,16 @@ export function BudgetsView({
                 )}
               </td>
               <td className="px-6 py-4">
-                <Badge variant={getStatusBadgeVariant(budget.status)}>
-                  {BUDGET_STATUS_LABEL[budget.status]}
-                </Badge>
+                <Badge variant={getStatusBadgeVariant(budget.status)}>{BUDGET_STATUS_LABEL[budget.status]}</Badge>
               </td>
               <td className="px-6 py-4 text-gray-500 max-w-xs truncate">
                 {budget.jobDescription ?? <span className="text-gray-300">—</span>}
               </td>
+              <td className="px-6 py-4 font-medium tabular-nums text-gray-700">
+                {formatCurrencyBRL(budget.projectedValue)}
+              </td>
               <td className="px-6 py-4 text-gray-500">
-                {format(
-                  new Date(canViewEditHistory ? getBudgetDisplayDate(budget) : budget.createdAt),
-                  "dd/MM/yyyy",
-                )}
+                {format(new Date(canViewEditHistory ? getBudgetDisplayDate(budget) : budget.createdAt), "dd/MM/yyyy")}
               </td>
               {canViewEditHistory && (
                 <td className="px-6 py-4 text-gray-500">

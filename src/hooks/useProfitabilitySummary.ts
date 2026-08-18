@@ -65,7 +65,7 @@ function sumTotals(items: ProfitabilityRow[]): ProfitabilityTotals {
 export interface UseProfitabilitySummaryInput {
   primaryItems: BudgetItem[];
   categories: BudgetCategory[];
-  internalItemsTotal: number;
+  internalServicesSubtotal: number;
   honorariumPercentage: number;
   prazoDias: number;
   antecipadoCliente: number;
@@ -75,7 +75,7 @@ export interface UseProfitabilitySummaryInput {
 export function useProfitabilitySummary({
   primaryItems,
   categories,
-  internalItemsTotal,
+  internalServicesSubtotal,
   honorariumPercentage,
   prazoDias,
   antecipadoCliente,
@@ -121,7 +121,7 @@ export function useProfitabilitySummary({
 
     const result = calculateProfitabilityResult({
       primaryItems,
-      internalServicesSubtotal: internalItemsTotal,
+      internalServicesSubtotal,
       honorariumPercentage,
       prazoDias,
       antecipadoCliente,
@@ -134,5 +134,5 @@ export function useProfitabilitySummary({
       grandTotals,
       totalsViaJoy,
     };
-  }, [primaryItems, categories, internalItemsTotal, honorariumPercentage, prazoDias, antecipadoCliente, rates]);
+  }, [primaryItems, categories, internalServicesSubtotal, honorariumPercentage, prazoDias, antecipadoCliente, rates]);
 }

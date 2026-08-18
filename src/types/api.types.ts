@@ -51,6 +51,7 @@ export interface ApiBudget {
   customerId: string;
   folderId: string;
   taxNf: number;
+  projectedValue: number;
   status: BudgetStatus;
   isEditable: boolean;
   isDeletable: boolean;
@@ -73,12 +74,14 @@ export interface CreateBudgetRequest {
   name: string;
   customerId: string;
   folderId: string;
+  projectedValue?: number;
 }
 
 export interface UpdateBudgetRequest {
   name?: string;
   customerId?: string;
   folderId?: string;
+  projectedValue?: number;
   jobDescription?: string;
   location?: string;
   eventDate?: string;

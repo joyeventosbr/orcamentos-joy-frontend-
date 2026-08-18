@@ -33,7 +33,6 @@ import {
   BudgetCategory,
   BudgetItem,
   HonorariumPercentage,
-  isInternalServiceCategory,
 } from "@/src/types";
 import { BulkUpdateBudgetLinesRequest, UpdateBudgetRequest } from "@/src/types/api.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -142,6 +141,7 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
   const fatViaJoy = billingSummary.metrics.find((metric) => metric.key === "joy")?.amount ?? 0;
   const internalServicesSummary = useInternalServicesSummary(
     budgetItems,
+    budget?.projectedValue ?? 0,
     billingSummary.honorariumBase,
     honorariumPercentage,
     fatViaJoy,
@@ -152,7 +152,7 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
   const profitabilitySummary = useProfitabilitySummary({
     primaryItems: primaryBudgetItems,
     categories: primaryBudgetCategories,
-    internalItemsTotal: internalServicesSummary.internalItemsTotal,
+    internalServicesSubtotal: internalServicesSummary.internalItemsTotal + internalServicesSummary.planning,
     honorariumPercentage,
     prazoDias,
     antecipadoCliente,
@@ -182,7 +182,6 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
           if (!prev) return prev;
           const newItems = prev.items.map((item) => {
             if (item.id !== id) return item;
-            if (field === "billingType" && isInternalServiceCategory(item.categoryId)) return item;
             const updated = { ...item, [field]: value };
             if (field === "quantity" || field === "days" || field === "unitPrice") {
               return recalculateBudgetItemTotal(updated);
@@ -321,6 +320,9 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
 
         toast.success("Orçamento salvo com sucesso!");
         return true;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Falha ao salvar orçamento.");
+        return false;
       } finally {
         isSavingRef.current = false;
         setIsSaving(false);

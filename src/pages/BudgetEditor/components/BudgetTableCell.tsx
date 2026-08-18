@@ -325,7 +325,7 @@ function BillingTypeSelect({
     }
   }, [isFocused]);
 
-  const commit = (next: string) => {
+  const commit = (next: BudgetItem["billingType"]) => {
     setDraft(next);
     if (next !== item.billingType) {
       onUpdate(item.id, "billingType", next);
@@ -333,9 +333,31 @@ function BillingTypeSelect({
   };
 
   if (isInternalServiceCategory(item.categoryId)) {
+    if (isLocked) {
+      return (
+        <div className="h-full w-full px-3 py-2 flex items-center text-sm font-medium text-slate-500">
+          {item.billingType || "—"}
+        </div>
+      );
+    }
+
     return (
-      <div className="h-full w-full px-3 py-2 flex items-center text-sm font-medium text-slate-700">
-        VIA NF
+      <div className="h-full w-full px-1 py-1">
+        <select
+          ref={selectRef}
+          className="h-8 w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm font-medium text-slate-700 outline-none transition-all hover:bg-gray-100 focus:border-gray-300 focus:bg-white"
+          value={draft}
+          onChange={(e) => commit(e.target.value as BudgetItem["billingType"])}
+          onKeyDown={(e) => {
+            if (e.key === "Tab") {
+              e.preventDefault();
+              onTab();
+            }
+          }}
+        >
+          <option value="VIA NF">VIA NF</option>
+          <option value="VIA CLIENTE">VIA CLIENTE</option>
+        </select>
       </div>
     );
   }
@@ -358,7 +380,7 @@ function BillingTypeSelect({
             : "border-transparent bg-transparent text-slate-700 hover:bg-gray-100 focus:border-gray-300"
         }`}
         value={draft}
-        onChange={(e) => commit(e.target.value)}
+        onChange={(e) => commit(e.target.value as BudgetItem["billingType"])}
         onKeyDown={(e) => {
           if (e.key === "Tab") {
             e.preventDefault();

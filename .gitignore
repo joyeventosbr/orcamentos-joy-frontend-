@@ -10,3 +10,4 @@ coverage/
 .cursor
 excel/
 excel/*
+AGENTS.md

@@ -1,14 +1,14 @@
-import { createContext, useCallback, useContext, useMemo, ReactNode } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { selectIsAuthenticated, useAuthStore } from '@/src/store/auth.store';
-import { ApiBudget, Customer, Folder } from '@/src/types/api.types';
-import { customersKeys } from '@/src/api/customers/customers.keys';
-import { customersReq } from '@/src/api/customers/customers.req';
-import { foldersKeys } from '@/src/api/folders/folders.keys';
-import { foldersReq } from '@/src/api/folders/folders.req';
-import { invalidateBudgetList, removeBudgetDetailCache } from '@/src/api/budgets/budgets.cache';
-import { budgetsKeys } from '@/src/api/budgets/budgets.keys';
-import { budgetsReq } from '@/src/api/budgets/budgets.req';
+import { invalidateBudgetList, removeBudgetDetailCache } from "@/src/api/budgets/budgets.cache";
+import { budgetsKeys } from "@/src/api/budgets/budgets.keys";
+import { budgetsReq } from "@/src/api/budgets/budgets.req";
+import { customersKeys } from "@/src/api/customers/customers.keys";
+import { customersReq } from "@/src/api/customers/customers.req";
+import { foldersKeys } from "@/src/api/folders/folders.keys";
+import { foldersReq } from "@/src/api/folders/folders.req";
+import { selectIsAuthenticated, useAuthStore } from "@/src/store/auth.store";
+import { ApiBudget, CreateBudgetRequest, Customer, Folder } from "@/src/types/api.types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createContext, ReactNode, useCallback, useContext, useMemo } from "react";
 
 interface AppDataContextType {
   customers: Customer[];
@@ -21,7 +21,7 @@ interface AppDataContextType {
   addFolder: (customerId: string, name: string) => Promise<Folder>;
   renameFolder: (id: string, name: string) => Promise<Folder>;
   deleteFolder: (id: string) => Promise<void>;
-  addBudget: (input: { folderId: string; customerId: string; name: string }) => Promise<ApiBudget>;
+  addBudget: (input: CreateBudgetRequest) => Promise<ApiBudget>;
   copyBudget: (id: string) => Promise<ApiBudget>;
   deleteBudget: (id: string) => Promise<void>;
 }
@@ -139,8 +139,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   );
 
   const addBudget = useCallback(
-    (input: { folderId: string; customerId: string; name: string }) =>
-      createBudgetMutation.mutateAsync(input),
+    (input: CreateBudgetRequest) => createBudgetMutation.mutateAsync(input),
     [createBudgetMutation.mutateAsync],
   );
 
@@ -179,10 +178,19 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       deleteBudget,
     }),
     [
-      customers, folders, budgets, isLoading,
-      addCustomer, renameCustomer, deleteCustomer,
-      addFolder, renameFolder, deleteFolder,
-      addBudget, copyBudget, deleteBudget,
+      customers,
+      folders,
+      budgets,
+      isLoading,
+      addCustomer,
+      renameCustomer,
+      deleteCustomer,
+      addFolder,
+      renameFolder,
+      deleteFolder,
+      addBudget,
+      copyBudget,
+      deleteBudget,
     ],
   );
 
@@ -192,7 +200,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 export function useAppData() {
   const context = useContext(AppDataContext);
   if (context === undefined) {
-    throw new Error('useAppData must be used within a AppDataProvider');
+    throw new Error("useAppData must be used within a AppDataProvider");
   }
   return context;
 }

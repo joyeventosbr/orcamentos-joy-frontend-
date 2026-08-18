@@ -1,7 +1,7 @@
 export { BudgetStatus } from "@/src/types/api.types";
 
-import { BudgetStatus } from "@/src/types/api.types";
 import { getBudgetFolderTab } from "@/src/lib/budgetStatus";
+import { BudgetStatus } from "@/src/types/api.types";
 
 export const BUDGET_FOLDER_OPTIONS = ["concorrencia", "aprovados", "producao"] as const;
 
@@ -89,6 +89,8 @@ export interface Budget {
   date?: string;
   participants?: string;
   honorariumPercentage?: HonorariumPercentage;
+  /** Valor de planejamento informado manualmente e persistido pela API como projectedValue. */
+  projectedValue: number;
   /** Fator NF gravado na criação do orçamento (snapshot da API). */
   taxNf: number;
 }
