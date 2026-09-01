@@ -34,6 +34,24 @@ export function createBudgetItem(
   };
 }
 
+export function hasZeroLineTotalBillingType(billingType: BudgetItem["billingType"]): boolean {
+  return billingType === "OPCIONAL" || billingType === "EXCLUÍDO";
+}
+
+export function calculateBudgetItemLineTotal(
+  item: Pick<BudgetItem, "billingType" | "quantity" | "days" | "unitPrice">,
+): number {
+  if (hasZeroLineTotalBillingType(item.billingType)) return 0;
+  return Number(item.quantity) * Number(item.days) * Number(item.unitPrice);
+}
+
+/** Valor de referência para itens opcionais/excluídos (não entra no total da linha nem no faturamento). */
+export function calculateReferenceLineAmount(
+  item: Pick<BudgetItem, "quantity" | "days" | "unitPrice">,
+): number {
+  return Number(item.quantity) * Number(item.days) * Number(item.unitPrice);
+}
+
 export function recalculateBudgetTotal(items: BudgetItem[]) {
   return items.reduce((sum, item) => sum + item.total, 0);
 }
@@ -41,7 +59,7 @@ export function recalculateBudgetTotal(items: BudgetItem[]) {
 export function recalculateBudgetItemTotal(item: BudgetItem): BudgetItem {
   return {
     ...item,
-    total: Number(item.quantity) * Number(item.days) * Number(item.unitPrice),
+    total: calculateBudgetItemLineTotal(item),
   };
 }
 

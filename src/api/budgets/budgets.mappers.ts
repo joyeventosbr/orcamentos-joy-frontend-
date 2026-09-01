@@ -1,3 +1,4 @@
+import { recalculateBudgetItemTotal } from "@/src/lib/budgetFactory";
 import { Budget, BudgetItem } from "@/src/types";
 import {
   BillingType,
@@ -73,13 +74,15 @@ export function mapDetailToBudget(detail: BudgetDetail): Budget {
 }
 
 export function mapLineToItem(line: BudgetLine): BudgetItem {
-  return {
+  const billingType = (line.billingType ?? "") as BudgetItem["billingType"];
+
+  return recalculateBudgetItemTotal({
     id: line.id,
     categoryId: line.categoryCode,
     itemNumber: `${line.categoryCode}.${line.order}`,
     name: line.name,
     description: line.description,
-    billingType: (line.billingType ?? "") as BudgetItem["billingType"],
+    billingType,
     quantity: line.quantity,
     days: line.dailyRates,
     unitPrice: line.unitValue,
@@ -96,7 +99,7 @@ export function mapLineToItem(line: BudgetLine): BudgetItem {
     percentNfBV: line.percentNfBv ?? undefined,
     percentNfOver: line.percentNfOver ?? 0,
     nfReceived: normalizeNfReceived(line.nfReceived),
-  };
+  });
 }
 
 function toApiBillingType(billingType: BudgetItem["billingType"]): BillingType | null {

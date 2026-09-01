@@ -194,7 +194,12 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
           const newItems = prev.items.map((item) => {
             if (item.id !== id) return item;
             const updated = { ...item, [field]: value };
-            if (field === "quantity" || field === "days" || field === "unitPrice") {
+            if (
+              field === "quantity" ||
+              field === "days" ||
+              field === "unitPrice" ||
+              field === "billingType"
+            ) {
               return recalculateBudgetItemTotal(updated);
             }
             return updated;

@@ -1,4 +1,5 @@
 import { BudgetBillingType, BudgetItem } from "@/src/types";
+import { calculateReferenceLineAmount } from "@/src/lib/budgetFactory";
 import { calculateGrossUpTax } from "@/src/lib/profitability";
 import { useMemo } from "react";
 
@@ -86,8 +87,12 @@ export function useBudgetBillingSummary(items: BudgetItem[], taxNfRate: number):
 
     items.forEach((item) => {
       const key = getBillingSummaryKey(item.billingType);
+      const amount =
+        key === "optional" || key === "excluded"
+          ? calculateReferenceLineAmount(item)
+          : item.total;
 
-      summaryByKey[key].amount += item.total;
+      summaryByKey[key].amount += amount;
       summaryByKey[key].itemCount += 1;
 
       if (item.billingType === "VIA NF") {
