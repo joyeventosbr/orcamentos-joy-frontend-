@@ -6,6 +6,11 @@ export interface IBudgetValidationResult {
   missingFields: string[];
   inconsistentItems: BudgetItem[];
   itemsMissingQtyOrDays: BudgetItem[];
+  itemsMissingName: BudgetItem[];
+}
+
+export function isBudgetLineMissingName(item: BudgetItem): boolean {
+  return !item.name?.trim();
 }
 
 export function validateBudget(budget: Budget): IBudgetValidationResult {
@@ -19,8 +24,9 @@ export function validateBudget(budget: Budget): IBudgetValidationResult {
   );
 
   const itemsMissingQtyOrDays = budget.items.filter(isQuantityOrDaysMissing);
+  const itemsMissingName = budget.items.filter(isBudgetLineMissingName);
 
-  return { missingFields, inconsistentItems, itemsMissingQtyOrDays };
+  return { missingFields, inconsistentItems, itemsMissingQtyOrDays, itemsMissingName };
 }
 
 /** Mensagem de erro para bloquear aprovação; null se o orçamento estiver válido. */
@@ -30,6 +36,9 @@ export function getBudgetApprovalError(result: IBudgetValidationResult): string 
   }
   if (result.itemsMissingQtyOrDays.length > 0) {
     return `Corrija ${result.itemsMissingQtyOrDays.length} item(ns) com Qtd ou Diárias não preenchidos antes de aprovar`;
+  }
+  if (result.itemsMissingName.length > 0) {
+    return `Preencha o nome de ${result.itemsMissingName.length} item(ns) antes de aprovar`;
   }
   if (result.inconsistentItems.length > 0) {
     return `Corrija ${result.inconsistentItems.length} item(ns) sem tipo de faturamento antes de aprovar`;

@@ -241,7 +241,7 @@ export function Dashboard() {
     }
   };
 
-  const handleCreateEntity = async (name: string, projectedValue?: number) => {
+  const handleCreateEntity = async (name: string) => {
     if (level === "customers") {
       await addCustomer(name);
     } else if (level === "folders" && currentCustomerId) {
@@ -251,7 +251,6 @@ export function Dashboard() {
         folderId: currentFolderId,
         customerId: currentCustomerId,
         name,
-        projectedValue: projectedValue ?? 0,
       });
       setIsModalOpen(false);
       navigateToEditor(budget.id);
@@ -410,7 +409,6 @@ export function Dashboard() {
           title={modalConfig.title}
           placeholder={modalConfig.placeholder}
           submitLabel={modalConfig.submitLabel}
-          includeProjectedValue={level === "budgets"}
           onCancel={() => setIsModalOpen(false)}
           onSubmit={handleCreateEntity}
         />

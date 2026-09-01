@@ -156,7 +156,7 @@ export function ProfitabilitySidebar({ isOpen, summary }: ProfitabilitySidebarPr
               <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">BV / Over</h4>
               <div className="divide-y divide-gray-100">
                 <MetricLine label="BV / Over Pré" value={consolidation.bvPre + consolidation.overPre} />
-                <MetricLine label="BV / Over Prod" value={consolidation.bvProd + consolidation.overProd} muted />
+                <MetricLine label="BV / Over Prod" value={consolidation.bvTotal + consolidation.overTotal} muted />
                 <MetricLine label="BV / Over Total" value={consolidation.bvTotal + consolidation.overTotal} />
                 <MetricLine label="Imposto Pré sobre BV + Over" value={summary.impostoBvOverPre} muted />
                 <MetricLine label="Imposto Prod sobre BV + Over" value={summary.impostoBvOverProd} muted />

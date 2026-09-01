@@ -62,8 +62,25 @@ function sumTotals(items: ProfitabilityRow[]): ProfitabilityTotals {
   );
 }
 
+function mapItemToRow(item: BudgetItem, rates: ProfitabilityRates): ProfitabilityRow {
+  const metrics = calculateProfitabilityItem(mapItemToProfitabilityInput(item), rates);
+  return {
+    id: item.id,
+    categoryId: item.categoryId,
+    fornecedor: item.fornecedorName || "",
+    valorFornecedor: item.fornecedorValue || 0,
+    percentBV: item.percentBV || 0,
+    percentNfBV: metrics.percentNfBV,
+    rsBV: metrics.rsBV,
+    percentNfOver: item.percentNfOver || 0,
+    over: metrics.over,
+    valorReal: metrics.valorReal,
+  };
+}
+
 export interface UseProfitabilitySummaryInput {
   primaryItems: BudgetItem[];
+  internalServiceItems?: BudgetItem[];
   categories: BudgetCategory[];
   internalServicesSubtotal: number;
   honorariumPercentage: number;
@@ -74,6 +91,7 @@ export interface UseProfitabilitySummaryInput {
 
 export function useProfitabilitySummary({
   primaryItems,
+  internalServiceItems = [],
   categories,
   internalServicesSubtotal,
   honorariumPercentage,
@@ -82,23 +100,9 @@ export function useProfitabilitySummary({
   rates = DEFAULT_PROFITABILITY_RATES,
 }: UseProfitabilitySummaryInput): ProfitabilitySummary {
   return useMemo(() => {
-    const allRows: ProfitabilityRow[] = primaryItems.map((item) => {
-      const metrics = calculateProfitabilityItem(mapItemToProfitabilityInput(item), rates);
-      const valorFornecedor = item.fornecedorValue || 0;
-
-      return {
-        id: item.id,
-        categoryId: item.categoryId,
-        fornecedor: item.fornecedorName || "",
-        valorFornecedor,
-        percentBV: item.percentBV || 0,
-        percentNfBV: metrics.percentNfBV,
-        rsBV: metrics.rsBV,
-        percentNfOver: item.percentNfOver || 0,
-        over: metrics.over,
-        valorReal: metrics.valorReal,
-      };
-    });
+    const primaryRows = primaryItems.map((item) => mapItemToRow(item, rates));
+    const internalRows = internalServiceItems.map((item) => mapItemToRow(item, rates));
+    const allRows = [...primaryRows, ...internalRows];
 
     const profitabilityCategories: ProfitabilityCategory[] = categories
       .map((cat) => {
@@ -114,13 +118,16 @@ export function useProfitabilitySummary({
 
     const grandTotals = sumTotals(allRows);
 
-    const joyItems = primaryItems.filter((i) => i.billingType === "VIA NF" || i.billingType === "ND OU REPASSE");
+    const joyItems = [...primaryItems, ...internalServiceItems].filter(
+      (i) => i.billingType === "VIA NF" || i.billingType === "ND OU REPASSE",
+    );
     const joyItemIds = new Set(joyItems.map((i) => i.id));
     const joyRows = allRows.filter((r) => joyItemIds.has(r.id));
     const totalsViaJoy = joyRows.length > 0 ? sumTotals(joyRows) : { ...EMPTY_TOTALS };
 
     const result = calculateProfitabilityResult({
       primaryItems,
+      internalServiceItems,
       internalServicesSubtotal,
       honorariumPercentage,
       prazoDias,
@@ -134,5 +141,14 @@ export function useProfitabilitySummary({
       grandTotals,
       totalsViaJoy,
     };
-  }, [primaryItems, categories, internalServicesSubtotal, honorariumPercentage, prazoDias, antecipadoCliente, rates]);
+  }, [
+    primaryItems,
+    internalServiceItems,
+    categories,
+    internalServicesSubtotal,
+    honorariumPercentage,
+    prazoDias,
+    antecipadoCliente,
+    rates,
+  ]);
 }

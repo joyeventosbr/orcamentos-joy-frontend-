@@ -51,7 +51,6 @@ export interface ApiBudget {
   customerId: string;
   folderId: string;
   taxNf: number;
-  projectedValue: number;
   status: BudgetStatus;
   isEditable: boolean;
   isDeletable: boolean;
@@ -74,7 +73,6 @@ export interface CreateBudgetRequest {
   name: string;
   customerId: string;
   folderId: string;
-  projectedValue?: number;
 }
 
 export interface UpdateBudgetRequest {
@@ -110,6 +108,7 @@ export interface BudgetDetail extends ApiBudget {
   customerName: string;
   folderName: string;
   taxNf: number;
+  projectedValue: number;
   lines: BudgetLine[];
 }
 

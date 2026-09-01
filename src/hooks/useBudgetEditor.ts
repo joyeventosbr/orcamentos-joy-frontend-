@@ -105,6 +105,11 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     [budgetItems],
   );
 
+  const internalBudgetItems = useMemo(
+    () => budgetItems.filter((item) => item.categoryId.startsWith("2.")),
+    [budgetItems],
+  );
+
   const groupedItems = useMemo(() => {
     const groups = buildStableGroupedItems(budgetItems, groupedItemsRef.current);
     groupedItemsRef.current = groups;
@@ -114,6 +119,11 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
   const primaryBudgetCategories = useMemo(() => categories.filter((c) => !c.id.startsWith("2.")), [categories]);
 
   const internalServiceCategories = useMemo(() => categories.filter((c) => c.id.startsWith("2.")), [categories]);
+
+  const profitabilityCategories = useMemo(
+    () => [...primaryBudgetCategories, ...internalServiceCategories],
+    [primaryBudgetCategories, internalServiceCategories],
+  );
 
   const missingCategories = useMemo(
     () => primaryBudgetCategories.filter((c) => !groupedItems[c.id] || groupedItems[c.id].length === 0),
@@ -151,7 +161,8 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
   );
   const profitabilitySummary = useProfitabilitySummary({
     primaryItems: primaryBudgetItems,
-    categories: primaryBudgetCategories,
+    internalServiceItems: internalBudgetItems,
+    categories: profitabilityCategories,
     internalServicesSubtotal: internalServicesSummary.internalItemsTotal + internalServicesSummary.planning,
     honorariumPercentage,
     prazoDias,
@@ -260,7 +271,9 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
   );
 
   const runValidation = useCallback((): IBudgetValidationResult => {
-    if (!budget) return { missingFields: [], inconsistentItems: [], itemsMissingQtyOrDays: [] };
+    if (!budget) {
+      return { missingFields: [], inconsistentItems: [], itemsMissingQtyOrDays: [], itemsMissingName: [] };
+    }
     return validateBudget(budget);
   }, [budget]);
 
@@ -339,66 +352,77 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     mutationFn: () => budgetsReq.approveToProduction(budgetId!),
   });
 
-  const handleApprove = useCallback(async (): Promise<void> => {
-    if (!budget || !budgetId) return;
+  const handleApprove = useCallback(async (): Promise<boolean> => {
+    if (!budget || !budgetId) return false;
 
     const approvalError = getBudgetApprovalError(validateBudget(budget));
     if (approvalError) {
       toast.error(approvalError);
-      throw new Error(approvalError);
+      return false;
     }
 
     const profitabilityError = getProfitabilityApprovalError(profitabilitySummary.rentabilidadeProd, isAdmin);
     if (profitabilityError) {
       toast.error(profitabilityError);
-      throw new Error(profitabilityError);
+      return false;
     }
 
     const saved = await saveBudget();
-    if (!saved) throw new Error("Falha ao salvar antes de aprovar.");
+    if (!saved) return false;
 
-    const created = await approveMutation.mutateAsync();
+    try {
+      const created = await approveMutation.mutateAsync();
 
-    await refreshBudgetCaches(queryClient, budgetId);
-    const detail = await fetchBudgetDetailFresh(queryClient, budgetId);
+      await refreshBudgetCaches(queryClient, budgetId);
+      const detail = await fetchBudgetDetailFresh(queryClient, budgetId);
 
-    const items = detail.lines.map(mapLineToItem);
-    const refreshedBudget = {
-      ...mapDetailToBudget(detail),
-      items,
-      totalValue: recalculateBudgetTotal(items),
-    };
-    setBudget(refreshedBudget);
-    originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
-    savedSnapshotRef.current = serializeBudgetForDirtyCheck(refreshedBudget);
+      const items = detail.lines.map(mapLineToItem);
+      const refreshedBudget = {
+        ...mapDetailToBudget(detail),
+        items,
+        totalValue: recalculateBudgetTotal(items),
+      };
+      setBudget(refreshedBudget);
+      originalLineIdsRef.current = new Set(detail.lines.map((l) => l.id));
+      savedSnapshotRef.current = serializeBudgetForDirtyCheck(refreshedBudget);
 
-    const countLabel = created.length === 2 ? "2 versões" : "1 versão";
-    toast.success(`Aprovação concluída. ${countLabel} criada(s) na pasta.`);
+      const countLabel = created.length === 2 ? "2 versões" : "1 versão";
+      toast.success(`Aprovação concluída. ${countLabel} criada(s) na pasta.`);
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao aprovar orçamento.");
+      throw error;
+    }
   }, [budget, budgetId, profitabilitySummary.rentabilidadeProd, isAdmin, saveBudget, approveMutation, queryClient]);
 
-  const handleApproveToProduction = useCallback(async (): Promise<string> => {
+  const handleApproveToProduction = useCallback(async (): Promise<string | null> => {
     if (!budget || !budgetId) throw new Error("Orçamento não encontrado.");
 
     const approvalError = getBudgetApprovalError(validateBudget(budget));
     if (approvalError) {
       toast.error(approvalError);
-      throw new Error(approvalError);
+      return null;
     }
 
     const profitabilityError = getProfitabilityApprovalError(profitabilitySummary.rentabilidadeProd, isAdmin);
     if (profitabilityError) {
       toast.error(profitabilityError);
-      throw new Error(profitabilityError);
+      return null;
     }
 
     const saved = await saveBudget();
-    if (!saved) throw new Error("Falha ao salvar antes de aprovar.");
+    if (!saved) return null;
 
-    const created = await approveToProductionMutation.mutateAsync();
+    try {
+      const created = await approveToProductionMutation.mutateAsync();
 
-    await refreshBudgetCaches(queryClient, budgetId);
-    toast.success("Orçamento enviado para Produção.");
-    return created.id;
+      await refreshBudgetCaches(queryClient, budgetId);
+      toast.success("Orçamento enviado para Produção.");
+      return created.id;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao aprovar para produção.");
+      throw error;
+    }
   }, [
     budget,
     budgetId,

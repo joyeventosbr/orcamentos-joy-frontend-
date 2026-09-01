@@ -266,7 +266,8 @@ export function BudgetEditor() {
 
   const handleApproveConfirm = useCallback(async () => {
     try {
-      await editor.handleApprove();
+      const approved = await editor.handleApprove();
+      if (!approved) return;
       setShowApprovalModal(false);
       setApprovalError(null);
     } catch (err: unknown) {
@@ -279,6 +280,7 @@ export function BudgetEditor() {
     setIsApprovingToProduction(true);
     try {
       const createdId = await editor.handleApproveToProduction();
+      if (!createdId) return;
       setShowApproveToProductionModal(false);
       setApproveToProductionError(null);
       navigate(`/editor/${createdId}`, { replace: true, state: location.state });

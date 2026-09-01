@@ -168,6 +168,8 @@ export function classifyProfitability(
 
 export interface ProfitabilityConsolidationInput {
   primaryItems: BudgetItem[];
+  /** Itens da seção 2 (serviços internos) — entram em custo/BV/Over Prod, como no Excel. */
+  internalServiceItems?: BudgetItem[];
   internalServicesSubtotal: number;
   honorariumPercentage: number;
   prazoDias: number;
@@ -189,8 +191,26 @@ function sumValorTotalWhere(items: BudgetItem[], billingType: BudgetItem["billin
   return sumValorTotalByBilling(items, (type) => type === billingType);
 }
 
+function sumProfitabilityMetrics(
+  items: BudgetItem[],
+  rates: ProfitabilityRates,
+): Pick<ProfitabilityItemMetrics, "rsBV" | "over" | "valorReal"> {
+  return items.reduce(
+    (acc, item) => {
+      const metrics = calculateProfitabilityItem(mapItemToProfitabilityInput(item), rates);
+      return {
+        rsBV: acc.rsBV + metrics.rsBV,
+        over: acc.over + metrics.over,
+        valorReal: acc.valorReal + metrics.valorReal,
+      };
+    },
+    { rsBV: 0, over: 0, valorReal: 0 },
+  );
+}
+
 export function calculateProfitabilityConsolidation({
   primaryItems,
+  internalServiceItems = [],
   internalServicesSubtotal,
   honorariumPercentage,
   prazoDias,
@@ -211,16 +231,15 @@ export function calculateProfitabilityConsolidation({
   const fatGeral = fatViaCliente + fatViaJoy;
   const totalGeral = fatGeral + subtotalServicos + impostoNfServicos;
 
-  let bvPre = 0;
-  let bvProd = 0;
-  let overPre = 0;
-  let overProd = 0;
-
-  primaryItems.forEach((item) => {
-    const metrics = calculateProfitabilityItem(mapItemToProfitabilityInput(item), rates);
-    bvPre += metrics.rsBV;
-    overPre += metrics.over;
-  });
+  // bv/over Pré = só fornecedores (seção 1).
+  // bv/over Prod nos campos abaixo = contribuição da seção 2; o total (Pré+Prod)
+  // é o que a UI/imposto Prod usam como “todo o orçamento”.
+  const metricsPre = sumProfitabilityMetrics(primaryItems, rates);
+  const metricsSection2 = sumProfitabilityMetrics(internalServiceItems, rates);
+  const bvPre = metricsPre.rsBV;
+  const overPre = metricsPre.over;
+  const bvProd = metricsSection2.rsBV;
+  const overProd = metricsSection2.over;
 
   return {
     fatViaCliente,
@@ -246,14 +265,12 @@ export function calculateProfitabilityResult(
 ): ProfitabilityResult {
   const rates = input.rates ?? DEFAULT_PROFITABILITY_RATES;
   const consolidation = calculateProfitabilityConsolidation(input);
+  const internalServiceItems = input.internalServiceItems ?? [];
 
-  let valorRealPre = 0;
-  let valorRealProd = 0;
-
-  input.primaryItems.forEach((item) => {
-    const metrics = calculateProfitabilityItem(mapItemToProfitabilityInput(item), rates);
-    valorRealPre += metrics.valorReal;
-  });
+  const metricsPre = sumProfitabilityMetrics(input.primaryItems, rates);
+  const metricsProd = sumProfitabilityMetrics(internalServiceItems, rates);
+  const valorRealPre = metricsPre.valorReal;
+  const valorRealProd = metricsProd.valorReal;
 
   const custosTerceiros = valorRealPre + valorRealProd;
   const impostoJoy = consolidation.impostoNfJoy + consolidation.impostoNfServicos;
