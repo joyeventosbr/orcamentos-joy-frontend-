@@ -10,7 +10,7 @@ export function PaymentScheduleSummaryCard({ formatCurrency, totals }: PaymentSc
     <section className="border-b border-gray-100 px-7 py-6">
       <div className="mb-3">
         <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">
-          Cronograma de Pagamento
+          Fluxo de Pagamento
         </h3>
       </div>
 

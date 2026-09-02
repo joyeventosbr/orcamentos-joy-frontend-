@@ -162,7 +162,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                   colSpan={6}
                   className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-100 text-gray-800"
                 >
-                  Cronograma de Pagamento
+                  Fluxo de Pagamento
                 </th>
                 <th
                   colSpan={9}
@@ -251,7 +251,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                   colSpan={6}
                   className="px-3 py-2 text-center border-b border-slate-200 font-semibold bg-gray-100 text-gray-800"
                 >
-                  Cronograma de Pagamento
+                  Fluxo de Pagamento
                 </th>
                 <th
                   colSpan={9}

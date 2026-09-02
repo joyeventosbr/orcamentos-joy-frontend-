@@ -298,7 +298,7 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
       {/* Payment Schedule Category Total Row */}
       <tr className="border-t border-gray-200 bg-gray-100 text-gray-900">
         <td colSpan={8} className="px-3 py-2 text-right text-xs font-black uppercase tracking-wide">
-          Total cronograma da categoria
+          Total Fluxo de pagamento do Item
         </td>
         {PAYMENT_SCHEDULE_COLUMNS.map((column) => (
           <td key={column.field} className="px-3 py-2 text-right text-xs font-black tabular-nums">
