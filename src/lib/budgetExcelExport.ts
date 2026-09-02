@@ -1,5 +1,9 @@
 import type { Worksheet } from "exceljs";
 
+import {
+  PAYMENT_SCHEDULE_COLUMNS,
+  PaymentScheduleField,
+} from "@/src/hooks/usePaymentScheduleSummary";
 import { Budget, BudgetItem } from "@/src/types";
 import { resolvePercentNfBV, resolveTaxNfFactor } from "@/src/lib/profitability";
 
@@ -71,7 +75,7 @@ const COL = {
   N_45: 14,
   O_60: 15,
   P_90: 16,
-  Q_120: 17, // coluna "120 dias" — não existe no template original, criada na exportação
+  Q_120: 17, // coluna do último slot do cronograma — criada na exportação quando ausente no template
   S_SUPPLIER: 19,
   T_SUPPLIER_VALUE: 20,
   U_BV: 21,
@@ -81,6 +85,17 @@ const COL = {
   Y_OVER: 25,
   Z_REAL: 26,
 } as const;
+
+const PAYMENT_SCHEDULE_COL_BY_FIELD: Record<PaymentScheduleField, number> = {
+  paymentAdvance: COL.L_ADVANCE,
+  payment30d: COL.M_30,
+  payment45d: COL.N_45,
+  payment60d: COL.O_60,
+  payment90d: COL.P_90,
+  payment120d: COL.Q_120,
+};
+
+const PAYMENT_SCHEDULE_HEADER_ROW = 8;
 
 // Faixa de colunas da área FINANCEIRA (S..AC) — removida na versão "cliente".
 const FINANCEIRA_FIRST_COL = 19;
@@ -237,7 +252,7 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
       setValue(r, COL.N_45, item.payment45d);
       setValue(r, COL.O_60, item.payment60d);
       setValue(r, COL.P_90, item.payment90d);
-      // Coluna "120 dias": não existe no template, então herda o estilo do 90 dias.
+      // Coluna do último slot: pode não existir no template, então herda o estilo da coluna anterior.
       ws.getCell(r, COL.Q_120).style = { ...ws.getCell(r, COL.P_90).style };
       setValue(r, COL.Q_120, item.payment120d);
       if (variant === "internal") {
@@ -259,8 +274,8 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
     regenerateFormulas(setFormula, finalFirst, renderedRows, offsetSection1, offsetTotal);
   }
 
-  // --- 6. Coluna "120 dias" (existe no sistema, não no template). ---
-  applyPayment120Column(ws, setFormula, finalFirst, offsetSection1, offsetTotal);
+  // --- 6. Cabeçalhos e coluna do último slot do cronograma (existe no sistema, não no template). ---
+  applyPaymentScheduleColumns(ws, setFormula, finalFirst, offsetSection1, offsetTotal);
 
   // O fator NF vem do snapshot da API. No formato atual, 0.82 é usado
   // diretamente como divisor; o formato percentual legado também é aceito.
@@ -353,21 +368,27 @@ function mergeSameNameGroups(
 }
 
 /**
- * Cria a coluna "120 dias" (Q): o template não a tem, mas o sistema sim. Reaproveita
- * a coluna espaçadora Q, herdando o estilo do "90 dias" (P), com cabeçalho e totais.
+ * Atualiza os rótulos do cronograma de pagamento e garante a coluna do último slot (Q),
+ * herdando o estilo da coluna anterior, com cabeçalho e totais.
  */
-function applyPayment120Column(
+function applyPaymentScheduleColumns(
   ws: Worksheet,
   setFormula: (row: number, col: number, formula: string) => void,
   finalFirst: Record<string, number>,
   o1: number,
   O: number,
 ): void {
+  for (const column of PAYMENT_SCHEDULE_COLUMNS) {
+    const col = PAYMENT_SCHEDULE_COL_BY_FIELD[column.field];
+    ws.getCell(PAYMENT_SCHEDULE_HEADER_ROW, col).value = column.label;
+  }
+
   ws.getColumn(COL.Q_120).width = ws.getColumn(COL.P_90).width;
 
   // Cabeçalho (linha 8).
-  ws.getCell(8, COL.Q_120).style = { ...ws.getCell(8, COL.P_90).style };
-  ws.getCell(8, COL.Q_120).value = "120 dias";
+  ws.getCell(PAYMENT_SCHEDULE_HEADER_ROW, COL.Q_120).style = {
+    ...ws.getCell(PAYMENT_SCHEDULE_HEADER_ROW, COL.P_90).style,
+  };
 
   const r205 = 205 + o1;
   const r245 = 245 + O;

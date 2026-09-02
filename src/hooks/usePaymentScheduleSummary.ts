@@ -16,13 +16,33 @@ export interface PaymentScheduleColumn {
 
 export type PaymentScheduleTotals = Record<PaymentScheduleField, number>;
 
+/** Acréscimo aplicado aos prazos exibidos no cronograma de pagamento (slots permanecem os mesmos). */
+export const PAYMENT_SCHEDULE_DAY_OFFSET = 7;
+
+const PAYMENT_SCHEDULE_SLOT_BASE_DAYS: Record<
+  Exclude<PaymentScheduleField, "paymentAdvance">,
+  number
+> = {
+  payment30d: 30,
+  payment45d: 45,
+  payment60d: 60,
+  payment90d: 90,
+  payment120d: 120,
+};
+
+function paymentScheduleDayLabel(
+  field: Exclude<PaymentScheduleField, "paymentAdvance">,
+): string {
+  return `${PAYMENT_SCHEDULE_SLOT_BASE_DAYS[field] + PAYMENT_SCHEDULE_DAY_OFFSET} dias`;
+}
+
 export const PAYMENT_SCHEDULE_COLUMNS: PaymentScheduleColumn[] = [
   { field: "paymentAdvance", label: "Antecipado" },
-  { field: "payment30d", label: "30 dias" },
-  { field: "payment45d", label: "45 dias" },
-  { field: "payment60d", label: "60 dias" },
-  { field: "payment90d", label: "90 dias" },
-  { field: "payment120d", label: "120 dias" },
+  { field: "payment30d", label: paymentScheduleDayLabel("payment30d") },
+  { field: "payment45d", label: paymentScheduleDayLabel("payment45d") },
+  { field: "payment60d", label: paymentScheduleDayLabel("payment60d") },
+  { field: "payment90d", label: paymentScheduleDayLabel("payment90d") },
+  { field: "payment120d", label: paymentScheduleDayLabel("payment120d") },
 ];
 
 export const emptyPaymentScheduleTotals = (): PaymentScheduleTotals => ({

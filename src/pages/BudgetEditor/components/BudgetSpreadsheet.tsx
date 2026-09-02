@@ -1,3 +1,4 @@
+import { PAYMENT_SCHEDULE_COLUMNS } from "@/src/hooks/usePaymentScheduleSummary";
 import { ProfitabilityCategory } from "@/src/hooks/useProfitabilitySummary";
 import { BudgetCategory, BudgetItem, TBudgetItemUpdater } from "@/src/types";
 import { ChevronDown } from "lucide-react";
@@ -175,12 +176,14 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 </th>
               </tr>
               <tr className="border-b border-slate-200 divide-x divide-slate-200">
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">Antecipado</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">30 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">45 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">60 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">90 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">120 dias</th>
+                {PAYMENT_SCHEDULE_COLUMNS.map((column) => (
+                  <th
+                    key={column.field}
+                    className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50"
+                  >
+                    {column.label}
+                  </th>
+                ))}
                 <th className="px-3 py-2 min-w-[150px] text-center text-gray-800 bg-gray-100">Fornecedor</th>
                 <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Fornecedor</th>
                 <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% BV</th>
@@ -264,12 +267,14 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 </th>
               </tr>
               <tr className="border-b border-slate-200 divide-x divide-slate-200">
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">Antecipado</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">30 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">45 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">60 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">90 dias</th>
-                <th className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50">120 dias</th>
+                {PAYMENT_SCHEDULE_COLUMNS.map((column) => (
+                  <th
+                    key={column.field}
+                    className="px-3 py-2 min-w-[110px] text-right text-gray-700 bg-gray-50"
+                  >
+                    {column.label}
+                  </th>
+                ))}
                 <th className="px-3 py-2 min-w-[150px] text-center text-gray-800 bg-gray-100">Fornecedor</th>
                 <th className="px-3 py-2 min-w-[120px] text-center text-gray-800 bg-gray-100">Valor Fornecedor</th>
                 <th className="px-3 py-2 min-w-[80px] text-center text-gray-800 bg-gray-100">% BV</th>
