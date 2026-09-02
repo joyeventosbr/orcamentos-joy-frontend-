@@ -15,3 +15,8 @@ export function formatTaxNfFactor(value: number) {
 export function formatTaxNfPercent(value: number) {
   return `${formatTaxNfFactor(value)}%`;
 }
+
+export function formatProfitabilityPercent(value: number | null | undefined) {
+  if (value == null) return "—";
+  return `${(value * 100).toFixed(2)}%`;
+}

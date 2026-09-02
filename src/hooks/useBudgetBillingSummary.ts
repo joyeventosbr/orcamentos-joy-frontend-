@@ -38,9 +38,8 @@ const getBillingSummaryKey = (billingType: BudgetItem["billingType"]): BillingSu
   return billingTypeToSummaryKey[billingType];
 };
 
-export function useBudgetBillingSummary(items: BudgetItem[], taxNfRate: number): BudgetBillingSummary {
-  return useMemo(() => {
-    const summaryByKey: Record<BillingSummaryKey, BillingSummaryMetric> = {
+export function calculateBudgetBillingSummary(items: BudgetItem[], taxNfRate: number): BudgetBillingSummary {
+  const summaryByKey: Record<BillingSummaryKey, BillingSummaryMetric> = {
       client: {
         key: "client",
         label: "Fornecedores via Cliente",
@@ -125,17 +124,20 @@ export function useBudgetBillingSummary(items: BudgetItem[], taxNfRate: number):
       },
     );
 
-    const totalSuppliers = summaryByKey.client.amount + summaryByKey.joy.amount + summaryByKey.joyInvoiceTax.amount;
+  const totalSuppliers = summaryByKey.client.amount + summaryByKey.joy.amount + summaryByKey.joyInvoiceTax.amount;
 
-    return {
-      metrics: [summaryByKey.client, summaryByKey.joy, summaryByKey.joyInvoiceTax, summaryByKey.unfilled],
-      secondaryMetrics: [summaryByKey.optional, summaryByKey.excluded],
-      billingTypeIssues,
-      honorariumBase: summaryByKey.client.amount + summaryByKey.joy.amount,
-      totalSuppliers,
-      filledAmount: totalSuppliers,
-      unfilledAmount: summaryByKey.unfilled.amount,
-      unfilledItemCount: summaryByKey.unfilled.itemCount,
-    };
-  }, [items, taxNfRate]);
+  return {
+    metrics: [summaryByKey.client, summaryByKey.joy, summaryByKey.joyInvoiceTax, summaryByKey.unfilled],
+    secondaryMetrics: [summaryByKey.optional, summaryByKey.excluded],
+    billingTypeIssues,
+    honorariumBase: summaryByKey.client.amount + summaryByKey.joy.amount,
+    totalSuppliers,
+    filledAmount: totalSuppliers,
+    unfilledAmount: summaryByKey.unfilled.amount,
+    unfilledItemCount: summaryByKey.unfilled.itemCount,
+  };
+}
+
+export function useBudgetBillingSummary(items: BudgetItem[], taxNfRate: number): BudgetBillingSummary {
+  return useMemo(() => calculateBudgetBillingSummary(items, taxNfRate), [items, taxNfRate]);
 }

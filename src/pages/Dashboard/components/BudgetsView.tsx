@@ -1,6 +1,7 @@
 import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Card, CardContent } from "@/src/components/ui/Card/Card";
+import { useBudgetCardMetrics } from "@/src/hooks/useBudgetCardMetrics";
 import { usePermissions } from "@/src/hooks/use-permissions";
 import {
   BUDGET_STATUS_LABEL,
@@ -10,9 +11,11 @@ import {
   shouldShowBudgetVersion,
 } from "@/src/lib/budgetStatus";
 import { DashboardReturnState, buildDashboardReturnState } from "@/src/lib/dashboardNavigation";
+import { formatCurrencyBRL, formatProfitabilityPercent } from "@/src/lib/formatters";
 import { ApiBudget } from "@/src/types/api.types";
 import { format } from "date-fns";
-import { Calendar, Copy, FileText, MoreHorizontal, Search, Trash2, UserRound } from "lucide-react";
+import { Calendar, CircleDollarSign, Copy, FileText, MoreHorizontal, Search, Trash2, TrendingUp, UserRound } from "lucide-react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface BudgetsViewProps {
@@ -95,6 +98,20 @@ function getBudgetDisplayDate(budget: ApiBudget): string {
   return budget.updatedAt ?? budget.createdAt;
 }
 
+function BudgetMetricsValue({
+  metrics,
+  formatValue,
+}: {
+  metrics: { grandTotal: number; pctRentabilidade: number | null } | undefined;
+  formatValue: (metrics: { grandTotal: number; pctRentabilidade: number | null }) => string;
+}) {
+  if (!metrics) {
+    return <span className="text-gray-300">—</span>;
+  }
+
+  return <span className="tabular-nums">{formatValue(metrics)}</span>;
+}
+
 export function BudgetsView({
   budgets,
   viewMode,
@@ -106,6 +123,8 @@ export function BudgetsView({
   onClearFilters,
 }: BudgetsViewProps) {
   const navigate = useNavigate();
+  const budgetIds = useMemo(() => budgets.map((budget) => budget.id), [budgets]);
+  const { metricsByBudgetId } = useBudgetCardMetrics(budgetIds);
 
   const openBudget = (budget: ApiBudget) => {
     navigate(`/editor/${budget.id}`, {
@@ -161,6 +180,22 @@ export function BudgetsView({
               </div>
               {budget.jobDescription && <p className="text-sm text-gray-500 truncate">{budget.jobDescription}</p>}
               <div className="mt-auto pt-6 space-y-2 text-sm">
+                <div className="flex items-center gap-1.5 font-medium text-gray-700">
+                  <CircleDollarSign size={14} />
+                  Valor total:{" "}
+                  <BudgetMetricsValue
+                    metrics={metricsByBudgetId.get(budget.id)}
+                    formatValue={(value) => formatCurrencyBRL(value.grandTotal)}
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 font-medium text-gray-700">
+                  <TrendingUp size={14} />
+                  Rentabilidade:{" "}
+                  <BudgetMetricsValue
+                    metrics={metricsByBudgetId.get(budget.id)}
+                    formatValue={(value) => formatProfitabilityPercent(value.pctRentabilidade)}
+                  />
+                </div>
                 <div className="flex items-center gap-1.5 text-gray-500">
                   <Calendar size={14} />
                   {format(new Date(getBudgetDisplayDate(budget)), "dd/MM/yyyy")}
@@ -195,6 +230,8 @@ export function BudgetsView({
             <th className="px-6 py-4 font-medium">Nome do Orçamento</th>
             <th className="px-6 py-4 font-medium">Status</th>
             <th className="px-6 py-4 font-medium">Descrição</th>
+            <th className="px-6 py-4 font-medium">Valor total</th>
+            <th className="px-6 py-4 font-medium">Rentabilidade</th>
             <th className="px-6 py-4 font-medium">{canViewEditHistory ? "Última Atualização" : "Data de Criação"}</th>
             {canViewEditHistory && <th className="px-6 py-4 font-medium">Editado por</th>}
             <th className="px-6 py-4 font-medium w-10"></th>
@@ -218,6 +255,18 @@ export function BudgetsView({
               </td>
               <td className="px-6 py-4 text-gray-500 max-w-xs truncate">
                 {budget.jobDescription ?? <span className="text-gray-300">—</span>}
+              </td>
+              <td className="px-6 py-4 font-medium tabular-nums text-gray-700">
+                <BudgetMetricsValue
+                  metrics={metricsByBudgetId.get(budget.id)}
+                  formatValue={(value) => formatCurrencyBRL(value.grandTotal)}
+                />
+              </td>
+              <td className="px-6 py-4 font-medium tabular-nums text-gray-700">
+                <BudgetMetricsValue
+                  metrics={metricsByBudgetId.get(budget.id)}
+                  formatValue={(value) => formatProfitabilityPercent(value.pctRentabilidade)}
+                />
               </td>
               <td className="px-6 py-4 text-gray-500">
                 {format(new Date(canViewEditHistory ? getBudgetDisplayDate(budget) : budget.createdAt), "dd/MM/yyyy")}
