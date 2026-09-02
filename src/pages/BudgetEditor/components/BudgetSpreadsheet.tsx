@@ -23,6 +23,8 @@ interface BudgetSpreadsheetProps {
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
   onCellTab: (id: string, field: keyof BudgetItem) => void;
+  onCellShiftTab: (id: string, field: keyof BudgetItem) => void;
+  onCellEnter: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
 }
 
@@ -57,6 +59,8 @@ function areBudgetSpreadsheetPropsEqual(prev: BudgetSpreadsheetProps, next: Budg
   if (prev.onCellClick !== next.onCellClick) return false;
   if (prev.onCellBlur !== next.onCellBlur) return false;
   if (prev.onCellTab !== next.onCellTab) return false;
+  if (prev.onCellShiftTab !== next.onCellShiftTab) return false;
+  if (prev.onCellEnter !== next.onCellEnter) return false;
   if (prev.onUpdate !== next.onUpdate) return false;
   if (prev.profitabilityCategoryMap !== next.profitabilityCategoryMap) return false;
   return true;
@@ -79,6 +83,8 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
   onCellClick,
   onCellBlur,
   onCellTab,
+  onCellShiftTab,
+  onCellEnter,
   onUpdate,
 }: BudgetSpreadsheetProps) {
   const sectionProps = useMemo(
@@ -93,6 +99,8 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
       onCellClick: isLocked ? noop : onCellClick,
       onCellBlur,
       onCellTab: isLocked ? noop : onCellTab,
+      onCellShiftTab: isLocked ? noop : onCellShiftTab,
+      onCellEnter: isLocked ? noop : onCellEnter,
       onUpdate: isLocked ? noop : onUpdate,
     }),
     [
@@ -106,6 +114,8 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
       onCellClick,
       onCellBlur,
       onCellTab,
+      onCellShiftTab,
+      onCellEnter,
       onUpdate,
     ],
   );

@@ -20,6 +20,8 @@ export type BudgetEditorSpreadsheetAreaProps = {
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
   onCellTab: (id: string, field: keyof BudgetItem) => void;
+  onCellShiftTab: (id: string, field: keyof BudgetItem) => void;
+  onCellEnter: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
 };
 

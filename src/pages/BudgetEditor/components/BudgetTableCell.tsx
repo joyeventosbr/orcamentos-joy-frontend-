@@ -16,18 +16,54 @@ function parseDraftNumber(raw: string): number {
 
 const DRAFT_NUMBER_PATTERN = /^-?\d*[.,]?\d*$/;
 
+function handleSpreadsheetKeyDown(
+  event: React.KeyboardEvent,
+  {
+    onCommit,
+    onTab,
+    onShiftTab,
+    onEnter,
+  }: {
+    onCommit: () => void;
+    onTab: () => void;
+    onShiftTab: () => void;
+    onEnter: () => void;
+  },
+) {
+  if (event.key === "Tab") {
+    event.preventDefault();
+    onCommit();
+    if (event.shiftKey) {
+      onShiftTab();
+    } else {
+      onTab();
+    }
+    return;
+  }
+
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    onCommit();
+    onEnter();
+  }
+}
+
 function EditableTextInput({
   value,
   align,
   onCommit,
   onBlur,
   onTab,
+  onShiftTab,
+  onEnter,
 }: {
   value: string;
   align: "left" | "right";
   onCommit: (value: string) => void;
   onBlur: () => void;
   onTab: () => void;
+  onShiftTab: () => void;
+  onEnter: () => void;
 }) {
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,17 +90,14 @@ function EditableTextInput({
         commit();
         onBlur();
       }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          commit();
-          onBlur();
-        }
-        if (e.key === "Tab") {
-          e.preventDefault();
-          commit();
-          onTab();
-        }
-      }}
+      onKeyDown={(e) =>
+        handleSpreadsheetKeyDown(e, {
+          onCommit: commit,
+          onTab,
+          onShiftTab,
+          onEnter,
+        })
+      }
     />
   );
 }
@@ -75,12 +108,16 @@ function EditableTextarea({
   onCommit,
   onBlur,
   onTab,
+  onShiftTab,
+  onEnter,
 }: {
   value: string;
   align: "left" | "right";
   onCommit: (value: string) => void;
   onBlur: () => void;
   onTab: () => void;
+  onShiftTab: () => void;
+  onEnter: () => void;
 }) {
   const [draft, setDraft] = useState(value);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,18 +140,14 @@ function EditableTextarea({
         commit();
         onBlur();
       }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          commit();
-          onBlur();
-        }
-        if (e.key === "Tab") {
-          e.preventDefault();
-          commit();
-          onTab();
-        }
-      }}
+      onKeyDown={(e) =>
+        handleSpreadsheetKeyDown(e, {
+          onCommit: commit,
+          onTab,
+          onShiftTab,
+          onEnter,
+        })
+      }
     />
   );
 }
@@ -125,12 +158,16 @@ function EditableNumberInput({
   onCommit,
   onBlur,
   onTab,
+  onShiftTab,
+  onEnter,
 }: {
   value: number;
   align: "left" | "right";
   onCommit: (value: number) => void;
   onBlur: () => void;
   onTab: () => void;
+  onShiftTab: () => void;
+  onEnter: () => void;
 }) {
   const [draft, setDraft] = useState(() => numberToDraft(value));
   const inputRef = useRef<HTMLInputElement>(null);
@@ -164,17 +201,14 @@ function EditableNumberInput({
         commit();
         onBlur();
       }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          commit();
-          onBlur();
-        }
-        if (e.key === "Tab") {
-          e.preventDefault();
-          commit();
-          onTab();
-        }
-      }}
+      onKeyDown={(e) =>
+        handleSpreadsheetKeyDown(e, {
+          onCommit: commit,
+          onTab,
+          onShiftTab,
+          onEnter,
+        })
+      }
     />
   );
 }
@@ -188,6 +222,8 @@ interface BudgetTableCellProps {
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
   onCellTab: (id: string, field: keyof BudgetItem) => void;
+  onCellShiftTab: (id: string, field: keyof BudgetItem) => void;
+  onCellEnter: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
   isBillingTypeLocked?: boolean;
   isLocked?: boolean;
@@ -217,6 +253,8 @@ function areBudgetTableCellPropsEqual(prev: BudgetTableCellProps, next: BudgetTa
   if (prev.onCellClick !== next.onCellClick) return false;
   if (prev.onCellBlur !== next.onCellBlur) return false;
   if (prev.onCellTab !== next.onCellTab) return false;
+  if (prev.onCellShiftTab !== next.onCellShiftTab) return false;
+  if (prev.onCellEnter !== next.onCellEnter) return false;
 
   const prevIsEditing = prev.editingCell?.id === prev.item.id && prev.editingCell?.field === prev.field;
   const nextIsEditing = next.editingCell?.id === next.item.id && next.editingCell?.field === next.field;
@@ -230,12 +268,16 @@ function NfReceivedCell({
   isFocused,
   onUpdate,
   onTab,
+  onShiftTab,
+  onEnter,
 }: {
   item: BudgetItem;
   isLocked: boolean;
   isFocused: boolean;
   onUpdate: TBudgetItemUpdater;
   onTab: () => void;
+  onShiftTab: () => void;
+  onEnter: () => void;
 }) {
   const [draft, setDraft] = useState(item.nfReceived ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -278,17 +320,14 @@ function NfReceivedCell({
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => commit(draft)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            commit(draft);
-            (e.target as HTMLInputElement).blur();
-          }
-          if (e.key === "Tab") {
-            e.preventDefault();
-            commit(draft);
-            onTab();
-          }
-        }}
+        onKeyDown={(e) =>
+          handleSpreadsheetKeyDown(e, {
+            onCommit: () => commit(draft),
+            onTab,
+            onShiftTab,
+            onEnter,
+          })
+        }
         title="NF recebida"
         aria-label="NF recebida"
         placeholder="—"
@@ -304,6 +343,8 @@ function BillingTypeSelect({
   isFocused,
   onUpdate,
   onTab,
+  onShiftTab,
+  onEnter,
 }: {
   item: BudgetItem;
   hasMissingBillingType: boolean;
@@ -311,6 +352,8 @@ function BillingTypeSelect({
   isFocused: boolean;
   onUpdate: TBudgetItemUpdater;
   onTab: () => void;
+  onShiftTab: () => void;
+  onEnter: () => void;
 }) {
   const [draft, setDraft] = useState(item.billingType);
   const selectRef = useRef<HTMLSelectElement>(null);
@@ -348,12 +391,14 @@ function BillingTypeSelect({
           className="h-8 w-full rounded border border-transparent bg-transparent px-2 py-1 text-sm font-medium text-slate-700 outline-none transition-all hover:bg-gray-100 focus:border-gray-300 focus:bg-white"
           value={draft}
           onChange={(e) => commit(e.target.value as BudgetItem["billingType"])}
-          onKeyDown={(e) => {
-            if (e.key === "Tab") {
-              e.preventDefault();
-              onTab();
-            }
-          }}
+          onKeyDown={(e) =>
+            handleSpreadsheetKeyDown(e, {
+              onCommit: () => {},
+              onTab,
+              onShiftTab,
+              onEnter,
+            })
+          }
         >
           <option value="VIA NF">VIA NF</option>
           <option value="VIA CLIENTE">VIA CLIENTE</option>
@@ -381,12 +426,14 @@ function BillingTypeSelect({
         }`}
         value={draft}
         onChange={(e) => commit(e.target.value as BudgetItem["billingType"])}
-        onKeyDown={(e) => {
-          if (e.key === "Tab") {
-            e.preventDefault();
-            onTab();
-          }
-        }}
+        onKeyDown={(e) =>
+          handleSpreadsheetKeyDown(e, {
+            onCommit: () => {},
+            onTab,
+            onShiftTab,
+            onEnter,
+          })
+        }
         title={hasMissingBillingType ? "Selecione o Tipo Faturamento — valor unitário preenchido sem tipo." : undefined}
       >
         <option value="">{hasMissingBillingType ? "⚠ Pendente" : "Selecionar"}</option>
@@ -414,11 +461,15 @@ export const BudgetTableCell = memo(function BudgetTableCell({
   onCellClick,
   onCellBlur,
   onCellTab,
+  onCellShiftTab,
+  onCellEnter,
   onUpdate,
   isBillingTypeLocked = false,
   isLocked = false,
 }: BudgetTableCellProps) {
   const handleTab = () => onCellTab(item.id, field);
+  const handleShiftTab = () => onCellShiftTab(item.id, field);
+  const handleEnter = () => onCellEnter(item.id, field);
 
   if (field === "billingType") {
     const hasMissingBillingType = !item.billingType && (item.unitPrice > 0 || item.total > 0);
@@ -432,6 +483,8 @@ export const BudgetTableCell = memo(function BudgetTableCell({
         isFocused={isFocused}
         onUpdate={onUpdate}
         onTab={handleTab}
+        onShiftTab={handleShiftTab}
+        onEnter={handleEnter}
       />
     );
   }
@@ -446,6 +499,8 @@ export const BudgetTableCell = memo(function BudgetTableCell({
         isFocused={isFocused}
         onUpdate={onUpdate}
         onTab={handleTab}
+        onShiftTab={handleShiftTab}
+        onEnter={handleEnter}
       />
     );
   }
@@ -464,6 +519,8 @@ export const BudgetTableCell = memo(function BudgetTableCell({
             onCommit={(val) => onUpdate(item.id, field, val)}
             onBlur={onCellBlur}
             onTab={handleTab}
+            onShiftTab={handleShiftTab}
+            onEnter={handleEnter}
           />
         </div>
       );
@@ -478,6 +535,8 @@ export const BudgetTableCell = memo(function BudgetTableCell({
             onCommit={(val) => onUpdate(item.id, field, val)}
             onBlur={onCellBlur}
             onTab={handleTab}
+            onShiftTab={handleShiftTab}
+            onEnter={handleEnter}
           />
         </div>
       );
@@ -491,6 +550,8 @@ export const BudgetTableCell = memo(function BudgetTableCell({
           onCommit={(val) => onUpdate(item.id, field, val)}
           onBlur={onCellBlur}
           onTab={handleTab}
+          onShiftTab={handleShiftTab}
+          onEnter={handleEnter}
         />
       </div>
     );

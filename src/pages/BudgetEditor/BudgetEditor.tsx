@@ -3,7 +3,12 @@ import { usePermissions } from "@/src/hooks/use-permissions";
 import { useBudgetEditor } from "@/src/hooks/useBudgetEditor";
 import { useBudgetLeaveGuard } from "@/src/hooks/useBudgetLeaveGuard";
 import { ExcelExportVariant, exportBudgetToExcel } from "@/src/lib/budgetExcelExport";
-import { getNextTabCell } from "@/src/lib/budgetSpreadsheetNavigation";
+import {
+  getNextEnterCell,
+  getNextTabCell,
+  getPreviousTabCell,
+  SpreadsheetNavContext,
+} from "@/src/lib/budgetSpreadsheetNavigation";
 import { getBudgetApprovalError, getProfitabilityApprovalError } from "@/src/lib/budgetValidation";
 import { buildDashboardReturnState, DashboardReturnState } from "@/src/lib/dashboardNavigation";
 import { Budget, BudgetItem } from "@/src/types";
@@ -23,6 +28,7 @@ export function BudgetEditor() {
   const location = useLocation();
   const { budgetId } = useParams<{ budgetId: string }>();
   const headerRef = useRef<BudgetEditorHeaderHandle>(null);
+  const isNavigatingCellRef = useRef(false);
   const { isAdmin } = usePermissions();
 
   const editor = useBudgetEditor(budgetId, isAdmin);
@@ -131,17 +137,49 @@ export function BudgetEditor() {
     [editor.isLocked],
   );
 
+  const spreadsheetNavContext = useMemo<SpreadsheetNavContext>(
+    () => ({
+      isLocked: editor.isLocked,
+      isBillingTypeLocked: editor.isBillingTypeLocked,
+    }),
+    [editor.isLocked, editor.isBillingTypeLocked],
+  );
+
+  const navigateToCell = useCallback((next: { id: string; field: keyof BudgetItem } | null) => {
+    isNavigatingCellRef.current = true;
+    setEditingCell(next);
+  }, []);
+
   const handleCellBlur = useCallback(() => {
+    if (isNavigatingCellRef.current) {
+      isNavigatingCellRef.current = false;
+      return;
+    }
     setEditingCell(null);
   }, []);
 
   const handleCellTab = useCallback(
     (id: string, field: keyof BudgetItem) => {
       if (editor.isLocked) return;
-      const next = getNextTabCell(editor.budgetItems, id, field);
-      setEditingCell(next);
+      navigateToCell(getNextTabCell(editor.budgetItems, id, field, spreadsheetNavContext));
     },
-    [editor.isLocked, editor.budgetItems],
+    [editor.isLocked, editor.budgetItems, navigateToCell, spreadsheetNavContext],
+  );
+
+  const handleCellShiftTab = useCallback(
+    (id: string, field: keyof BudgetItem) => {
+      if (editor.isLocked) return;
+      navigateToCell(getPreviousTabCell(editor.budgetItems, id, field, spreadsheetNavContext));
+    },
+    [editor.isLocked, editor.budgetItems, navigateToCell, spreadsheetNavContext],
+  );
+
+  const handleCellEnter = useCallback(
+    (id: string, field: keyof BudgetItem) => {
+      if (editor.isLocked) return;
+      navigateToCell(getNextEnterCell(editor.budgetItems, id, field, spreadsheetNavContext));
+    },
+    [editor.isLocked, editor.budgetItems, navigateToCell, spreadsheetNavContext],
   );
 
   const handleBudgetChange = useCallback(
@@ -208,6 +246,8 @@ export function BudgetEditor() {
       onCellClick: handleCellClick,
       onCellBlur: handleCellBlur,
       onCellTab: handleCellTab,
+      onCellShiftTab: handleCellShiftTab,
+      onCellEnter: handleCellEnter,
       onUpdate: editor.updateItem,
     }),
     [
@@ -227,6 +267,8 @@ export function BudgetEditor() {
       handleCellClick,
       handleCellBlur,
       handleCellTab,
+      handleCellShiftTab,
+      handleCellEnter,
       editor.updateItem,
     ],
   );

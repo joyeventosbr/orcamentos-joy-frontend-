@@ -12,6 +12,8 @@ type BudgetItemRowCellProps = {
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
   onCellTab: (id: string, field: keyof BudgetItem) => void;
+  onCellShiftTab: (id: string, field: keyof BudgetItem) => void;
+  onCellEnter: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
   isBillingTypeLocked: boolean;
   isLocked: boolean;
@@ -33,11 +35,23 @@ const BudgetItemRow = memo(
     onCellClick,
     onCellBlur,
     onCellTab,
+    onCellShiftTab,
+    onCellEnter,
     onUpdate,
     onDeleteRow,
   }: BudgetItemRowProps) {
     const profitabilityMetrics = mapBudgetItemToProfitabilityMetrics(item);
-    const cellProps = { editingCell, onCellClick, onCellBlur, onCellTab, onUpdate, isBillingTypeLocked, isLocked };
+    const cellProps = {
+      editingCell,
+      onCellClick,
+      onCellBlur,
+      onCellTab,
+      onCellShiftTab,
+      onCellEnter,
+      onUpdate,
+      isBillingTypeLocked,
+      isLocked,
+    };
 
     return (
       <tr
@@ -136,6 +150,8 @@ const BudgetItemRow = memo(
     if (prev.onCellClick !== next.onCellClick) return false;
     if (prev.onCellBlur !== next.onCellBlur) return false;
     if (prev.onCellTab !== next.onCellTab) return false;
+    if (prev.onCellShiftTab !== next.onCellShiftTab) return false;
+    if (prev.onCellEnter !== next.onCellEnter) return false;
 
     const prevRowEditing = prev.editingCell?.id === prev.item.id;
     const nextRowEditing = next.editingCell?.id === next.item.id;
@@ -164,6 +180,8 @@ interface BudgetCategorySectionProps {
   onCellClick: (id: string, field: keyof BudgetItem) => void;
   onCellBlur: () => void;
   onCellTab: (id: string, field: keyof BudgetItem) => void;
+  onCellShiftTab: (id: string, field: keyof BudgetItem) => void;
+  onCellEnter: (id: string, field: keyof BudgetItem) => void;
   onUpdate: TBudgetItemUpdater;
 }
 
@@ -183,6 +201,8 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
   onCellClick,
   onCellBlur,
   onCellTab,
+  onCellShiftTab,
+  onCellEnter,
   onUpdate,
 }: BudgetCategorySectionProps) {
   const isInternalServicesCategory = allowInternalStyle && category.id === "2.1";
@@ -268,6 +288,8 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
             onCellClick={onCellClick}
             onCellBlur={onCellBlur}
             onCellTab={onCellTab}
+            onCellShiftTab={onCellShiftTab}
+            onCellEnter={onCellEnter}
             onUpdate={onUpdate}
             onDeleteRow={onDeleteRow}
           />
@@ -320,6 +342,8 @@ export const BudgetCategorySection = memo(function BudgetCategorySection({
   if (prev.onCellClick !== next.onCellClick) return false;
   if (prev.onCellBlur !== next.onCellBlur) return false;
   if (prev.onCellTab !== next.onCellTab) return false;
+  if (prev.onCellShiftTab !== next.onCellShiftTab) return false;
+  if (prev.onCellEnter !== next.onCellEnter) return false;
 
   const prevHasEditing = prev.items.some((item) => item.id === prev.editingCell?.id);
   const nextHasEditing = next.items.some((item) => item.id === next.editingCell?.id);
