@@ -23,13 +23,23 @@ function handleSpreadsheetKeyDown(
     onTab,
     onShiftTab,
     onEnter,
+    multiline = false,
+    onInsertNewline,
   }: {
     onCommit: () => void;
     onTab: () => void;
     onShiftTab: () => void;
     onEnter: () => void;
+    multiline?: boolean;
+    onInsertNewline?: () => void;
   },
 ) {
+  if (multiline && event.key === "Enter" && event.altKey) {
+    event.preventDefault();
+    onInsertNewline?.();
+    return;
+  }
+
   if (event.key === "Tab") {
     event.preventDefault();
     onCommit();
@@ -130,6 +140,22 @@ function EditableTextarea({
     if (draft !== value) onCommit(draft);
   };
 
+  const insertNewlineAtCursor = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    const start = el.selectionStart ?? draft.length;
+    const end = el.selectionEnd ?? draft.length;
+    const next = `${draft.slice(0, start)}\n${draft.slice(end)}`;
+    setDraft(next);
+
+    requestAnimationFrame(() => {
+      el.focus();
+      const cursor = start + 1;
+      el.setSelectionRange(cursor, cursor);
+    });
+  };
+
   return (
     <textarea
       ref={textareaRef}
@@ -146,6 +172,8 @@ function EditableTextarea({
           onTab,
           onShiftTab,
           onEnter,
+          multiline: true,
+          onInsertNewline: insertNewlineAtCursor,
         })
       }
     />
