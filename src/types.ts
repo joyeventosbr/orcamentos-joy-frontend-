@@ -15,7 +15,7 @@ export function isInternalServiceCategory(categoryId: string): boolean {
   return categoryId.startsWith("2.");
 }
 
-export const HONORARIUM_PERCENTAGE_OPTIONS = [10, 15, 20] as const;
+export const HONORARIUM_PERCENTAGE_OPTIONS = [5, 10, 15, 20, 25] as const;
 
 export type HonorariumPercentage = (typeof HONORARIUM_PERCENTAGE_OPTIONS)[number];
 
