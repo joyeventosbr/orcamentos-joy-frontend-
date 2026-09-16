@@ -289,7 +289,6 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
             <tbody className="divide-y text-slate-700">
               {internalServiceCategories.map((category) => {
                 const items = groupedItems[category.id] || [];
-                if (items.length === 0) return null;
                 return (
                   <BudgetCategorySection
                     key={category.id}

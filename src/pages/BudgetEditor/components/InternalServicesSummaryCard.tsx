@@ -1,6 +1,12 @@
 import { CurrencyInput } from "@/src/components/ui/CurrencyInput/CurrencyInput";
 import { formatCurrencyBRL } from "@/src/lib/formatters";
-import { HONORARIUM_PERCENTAGE_OPTIONS, HonorariumPercentage } from "@/src/types";
+import {
+  HONORARIUM_PERCENTAGE_OPTIONS,
+  HonorariumOption,
+  HonorariumPercentage,
+  HonorariumRate,
+  MINIMUM_FEE_HONORARIUM_OPTION,
+} from "@/src/types";
 import { useEffect, useState } from "react";
 
 interface InternalServicesSummaryCardProps {
@@ -8,7 +14,8 @@ interface InternalServicesSummaryCardProps {
   planning: number;
   fees: number;
   honorariumBase: number;
-  honorariumPercentage: HonorariumPercentage;
+  honorariumPercentage: HonorariumRate;
+  honorariumMinimumFee: number;
   administrativeTaxes: number;
   subtotal: number;
   serviceTax: number;
@@ -16,7 +23,8 @@ interface InternalServicesSummaryCardProps {
   isLocked: boolean;
   isSaving: boolean;
   onPlanningChange: (value: number) => void;
-  onHonorariumPercentageChange: (value: HonorariumPercentage) => void;
+  onHonorariumOptionChange: (value: HonorariumOption) => void;
+  onHonorariumMinimumFeeChange: (value: number) => void;
 }
 
 function SummaryLine({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) {
@@ -50,6 +58,7 @@ export function InternalServicesSummaryCard({
   fees,
   honorariumBase,
   honorariumPercentage,
+  honorariumMinimumFee,
   administrativeTaxes,
   subtotal,
   serviceTax,
@@ -57,13 +66,15 @@ export function InternalServicesSummaryCard({
   isLocked,
   isSaving,
   onPlanningChange,
-  onHonorariumPercentageChange,
+  onHonorariumOptionChange,
+  onHonorariumMinimumFeeChange,
 }: InternalServicesSummaryCardProps) {
-  const [draftPercentage, setDraftPercentage] = useState(honorariumPercentage);
+  const selectedHonorariumOption = honorariumPercentage === 0 ? MINIMUM_FEE_HONORARIUM_OPTION : honorariumPercentage;
+  const [draftOption, setDraftOption] = useState<HonorariumOption>(selectedHonorariumOption);
 
   useEffect(() => {
-    setDraftPercentage(honorariumPercentage);
-  }, [honorariumPercentage]);
+    setDraftOption(selectedHonorariumOption);
+  }, [selectedHonorariumOption]);
 
   return (
     <section className="border-b border-gray-100 px-7 py-6">
@@ -96,13 +107,14 @@ export function InternalServicesSummaryCard({
           <div className="flex items-center gap-2">
             <select
               className="h-8 rounded border border-slate-200 bg-white px-2 text-sm font-bold text-slate-700 outline-none focus:border-brand-primary"
-              value={draftPercentage}
+              value={draftOption}
+              disabled={isLocked || isSaving}
               onChange={(event) => {
-                const next = Number(event.target.value) as HonorariumPercentage;
-                setDraftPercentage(next);
-                if (next !== honorariumPercentage) {
-                  onHonorariumPercentageChange(next);
-                }
+                const next = event.target.value === MINIMUM_FEE_HONORARIUM_OPTION
+                  ? MINIMUM_FEE_HONORARIUM_OPTION
+                  : (Number(event.target.value) as HonorariumPercentage);
+                setDraftOption(next);
+                onHonorariumOptionChange(next);
               }}
             >
               {HONORARIUM_PERCENTAGE_OPTIONS.map((option) => (
@@ -110,10 +122,23 @@ export function InternalServicesSummaryCard({
                   {option}%
                 </option>
               ))}
+              <option value={MINIMUM_FEE_HONORARIUM_OPTION}>Fee Mínimo</option>
             </select>
-            <div className="min-w-[92px] text-right text-sm font-bold tabular-nums text-slate-900">
-              {formatCurrencyBRL(fees)}
-            </div>
+            {honorariumPercentage === 0 && !isLocked ? (
+              <CurrencyInput
+                id="honorarium-minimum-fee"
+                ariaLabel="Valor mínimo de honorários"
+                value={honorariumMinimumFee}
+                onValueChange={onHonorariumMinimumFeeChange}
+                disabled={isSaving}
+                autoFocus
+                className="h-8 w-32 text-sm font-bold"
+              />
+            ) : (
+              <div className="min-w-[92px] text-right text-sm font-bold tabular-nums text-slate-900">
+                {formatCurrencyBRL(fees)}
+              </div>
+            )}
           </div>
         </div>
         <SummaryLine label="Taxas administrativas" value={administrativeTaxes} />

@@ -8,7 +8,8 @@ export function calculateInternalServicesSummary(
   items: BudgetItem[],
   planning: number,
   honorariumBase: number,
-  honorariumPercentage: HonorariumPercentage,
+  honorariumPercentage: number,
+  honorariumMinimumFee: number | undefined,
   fatViaJoy: number,
   antecipadoCliente: number,
   prazoDias: number,
@@ -18,7 +19,7 @@ export function calculateInternalServicesSummary(
     .filter((item) => item.categoryId === INTERNAL_SERVICES_CATEGORY_ID)
     .reduce((sum, item) => sum + item.total, 0);
 
-  const fees = honorariumBase * (honorariumPercentage / 100);
+  const fees = honorariumPercentage === 0 ? honorariumMinimumFee ?? 0 : honorariumBase * (honorariumPercentage / 100);
   const administrativeTaxes = calculateAdministrativeTax(fatViaJoy, antecipadoCliente, prazoDias);
   const subtotal = internalItemsTotal + planning + fees + administrativeTaxes;
   const serviceTax = calculateGrossUpTax(subtotal, taxNfRate);
@@ -42,7 +43,8 @@ export function useInternalServicesSummary(
   items: BudgetItem[],
   planning: number,
   honorariumBase: number,
-  honorariumPercentage: HonorariumPercentage,
+  honorariumPercentage: number,
+  honorariumMinimumFee: number | undefined,
   fatViaJoy: number,
   antecipadoCliente: number,
   prazoDias: number,
@@ -55,11 +57,12 @@ export function useInternalServicesSummary(
         planning,
         honorariumBase,
         honorariumPercentage,
+        honorariumMinimumFee,
         fatViaJoy,
         antecipadoCliente,
         prazoDias,
         taxNfRate,
       ),
-    [items, planning, honorariumBase, honorariumPercentage, fatViaJoy, antecipadoCliente, prazoDias, taxNfRate],
+    [items, planning, honorariumBase, honorariumPercentage, honorariumMinimumFee, fatViaJoy, antecipadoCliente, prazoDias, taxNfRate],
   );
 }
