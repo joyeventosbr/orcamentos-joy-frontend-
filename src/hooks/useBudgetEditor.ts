@@ -32,7 +32,8 @@ import {
   BUDGET_CATEGORIES,
   BudgetCategory,
   BudgetItem,
-  HonorariumPercentage,
+  MINIMUM_FEE_HONORARIUM_OPTION,
+  HonorariumOption,
 } from "@/src/types";
 import { BulkUpdateBudgetLinesRequest, UpdateBudgetRequest } from "@/src/types/api.types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -145,15 +146,18 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
 
   const billingSummary = useBudgetBillingSummary(primaryBudgetItems, taxNfRate);
   const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
-  const honorariumPercentage = budget?.honorariumPercentage ?? 10;
+  const honorariumBase = internalBudgetItems.reduce((sum, item) => sum + item.total, 0);
+  const honorariumPercentage = budget?.honorariumPercentage ?? 0;
+  const honorariumMinimumFee = budget?.honorariumMinimumFee ?? 0;
   const prazoDias = Number(budget?.deadline) || 0;
   const antecipadoCliente = paymentScheduleSummary.totals.paymentAdvance;
   const fatViaJoy = billingSummary.metrics.find((metric) => metric.key === "joy")?.amount ?? 0;
   const internalServicesSummary = useInternalServicesSummary(
     budgetItems,
     budget?.projectedValue ?? 0,
-    billingSummary.honorariumBase,
+    honorariumBase,
     honorariumPercentage,
+    honorariumMinimumFee,
     fatViaJoy,
     antecipadoCliente,
     prazoDias,
@@ -165,6 +169,8 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     categories: profitabilityCategories,
     internalServicesSubtotal: internalServicesSummary.internalItemsTotal + internalServicesSummary.planning,
     honorariumPercentage,
+    honorariumMinimumFee,
+    honorariumBase,
     prazoDias,
     antecipadoCliente,
     rates: profitabilityRates,
@@ -265,11 +271,29 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     [isLocked],
   );
 
-  const updateHonorariumPercentageValue = useCallback(
-    (value: HonorariumPercentage) => {
+  const updateHonorariumOptionValue = useCallback(
+    (value: HonorariumOption) => {
       if (isLocked) return;
       startTransition(() => {
-        setBudget((prev) => (prev ? { ...prev, honorariumPercentage: value } : prev));
+        setBudget((prev) => {
+          if (!prev) return prev;
+          if (value === MINIMUM_FEE_HONORARIUM_OPTION) {
+            const currentPercentage = prev.honorariumPercentage ?? 10;
+            const minimumFee = prev.honorariumMinimumFee || honorariumBase * (currentPercentage / 100);
+            return { ...prev, honorariumPercentage: 0, honorariumMinimumFee: minimumFee };
+          }
+          return { ...prev, honorariumPercentage: value, honorariumMinimumFee: 0 };
+        });
+      });
+    },
+    [honorariumBase, isLocked],
+  );
+
+  const updateHonorariumMinimumFeeValue = useCallback(
+    (value: number) => {
+      if (isLocked) return;
+      startTransition(() => {
+        setBudget((prev) => (prev ? { ...prev, honorariumMinimumFee: value } : prev));
       });
     },
     [isLocked],
@@ -459,13 +483,16 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
     profitabilitySummary,
     profitabilityCategoryMap,
     budgetGrandTotal,
+    honorariumBase,
     honorariumPercentage,
+    honorariumMinimumFee,
     updateItem,
     addRow,
     deleteRow,
     deleteCategoryItems,
     updateBudgetFields,
-    updateHonorariumPercentage: updateHonorariumPercentageValue,
+    updateHonorariumOption: updateHonorariumOptionValue,
+    updateHonorariumMinimumFee: updateHonorariumMinimumFeeValue,
     runValidation,
     saveBudget,
     handleApprove,

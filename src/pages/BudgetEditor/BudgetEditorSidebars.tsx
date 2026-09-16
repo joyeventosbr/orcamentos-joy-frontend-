@@ -4,7 +4,7 @@ import { PaymentScheduleTotals } from "@/src/hooks/usePaymentScheduleSummary";
 import { ProfitabilitySummary } from "@/src/hooks/useProfitabilitySummary";
 import { BudgetSummaryPanel } from "@/src/pages/BudgetEditor/components/BudgetSummaryPanel";
 import { ProfitabilitySidebar } from "@/src/pages/BudgetEditor/components/ProfitabilitySidebar";
-import { HonorariumPercentage } from "@/src/types";
+import { HonorariumOption, HonorariumRate } from "@/src/types";
 import { memo } from "react";
 
 type InternalServicesSummary = ReturnType<typeof useInternalServicesSummary>;
@@ -17,13 +17,15 @@ export type BudgetEditorSidebarsProps = {
   paymentTotals: PaymentScheduleTotals;
   internalServicesSummary: InternalServicesSummary;
   honorariumBase: number;
-  honorariumPercentage: HonorariumPercentage;
+  honorariumPercentage: HonorariumRate;
+  honorariumMinimumFee: number;
   advancePayment: number;
   isLocked: boolean;
   isSaving: boolean;
   profitabilitySummary: ProfitabilitySummary;
   onPlanningChange: (value: number) => void;
-  onHonorariumPercentageChange: (value: HonorariumPercentage) => void;
+  onHonorariumOptionChange: (value: HonorariumOption) => void;
+  onHonorariumMinimumFeeChange: (value: number) => void;
 };
 
 export const BudgetEditorSidebars = memo(function BudgetEditorSidebars({
@@ -35,12 +37,14 @@ export const BudgetEditorSidebars = memo(function BudgetEditorSidebars({
   internalServicesSummary,
   honorariumBase,
   honorariumPercentage,
+  honorariumMinimumFee,
   advancePayment,
   isLocked,
   isSaving,
   profitabilitySummary,
   onPlanningChange,
-  onHonorariumPercentageChange,
+  onHonorariumOptionChange,
+  onHonorariumMinimumFeeChange,
 }: BudgetEditorSidebarsProps) {
   return (
     <>
@@ -53,11 +57,13 @@ export const BudgetEditorSidebars = memo(function BudgetEditorSidebars({
         internalServicesSummary={internalServicesSummary}
         honorariumBase={honorariumBase}
         honorariumPercentage={honorariumPercentage}
+        honorariumMinimumFee={honorariumMinimumFee}
         advancePayment={advancePayment}
         isLocked={isLocked}
         isSaving={isSaving}
         onPlanningChange={onPlanningChange}
-        onHonorariumPercentageChange={onHonorariumPercentageChange}
+        onHonorariumOptionChange={onHonorariumOptionChange}
+        onHonorariumMinimumFeeChange={onHonorariumMinimumFeeChange}
       />
       <ProfitabilitySidebar isOpen={activeSidebar === "profitability"} summary={profitabilitySummary} />
     </>

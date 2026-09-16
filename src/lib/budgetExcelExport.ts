@@ -231,8 +231,6 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   setValue(4, COL.B_NAME, budget.location ?? "");
   setValue(5, COL.B_NAME, budget.date ?? "");
   setValue(6, COL.B_NAME, budget.participants ?? "");
-  // Honorários: sempre do orçamento (padrão 10%, igual ao sistema — não o 15% do template).
-  setValue(248 + offsetTotal, COL.F_DAYS, (budget.honorariumPercentage ?? 10) / 100);
   // Planejamento é persistido pela API como projectedValue.
   setValue(247 + offsetTotal, COL.I_TOTAL, budget.projectedValue);
 
@@ -272,6 +270,15 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   // --- 5. Regenera fórmulas apenas quando houve inserção (overflow). ---
   if (hasOverflow) {
     regenerateFormulas(setFormula, finalFirst, renderedRows, offsetSection1, offsetTotal);
+  }
+
+  const honorariumRow = 248 + offsetTotal;
+  if (budget.honorariumPercentage === 0) {
+    setValue(honorariumRow, COL.F_DAYS, null);
+    setValue(honorariumRow, COL.I_TOTAL, budget.honorariumMinimumFee);
+  } else {
+    // Honorários percentuais: padrão de 10%, igual ao sistema — não os 15% do template.
+    setValue(honorariumRow, COL.F_DAYS, (budget.honorariumPercentage ?? 10) / 100);
   }
 
   // --- 6. Cabeçalhos e coluna do último slot do cronograma (existe no sistema, não no template). ---
@@ -563,7 +570,7 @@ function regenerateFormulas(
 
   // Planejamento / honorários / taxas / totais gerais.
   payCols.forEach((c) => setFormula(r247, c, `SUM(${letters[c]}${r205},${letters[c]}${r245})`));
-  setFormula(r248, COL.I_TOTAL, `SUM(H${r205}+H${r206})*($F$${r248})`);
+  setFormula(r248, COL.I_TOTAL, `I${r245}*($F$${r248})`);
   setFormula(r248, COL.W_RS_BV, `SUM(W${r205},W${r245})`);
   setFormula(
     r250,

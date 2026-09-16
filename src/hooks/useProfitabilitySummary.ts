@@ -84,6 +84,8 @@ export interface UseProfitabilitySummaryInput {
   categories: BudgetCategory[];
   internalServicesSubtotal: number;
   honorariumPercentage: number;
+  honorariumMinimumFee?: number;
+  honorariumBase: number;
   prazoDias: number;
   antecipadoCliente: number;
   rates?: ProfitabilityRates;
@@ -95,6 +97,8 @@ export function useProfitabilitySummary({
   categories,
   internalServicesSubtotal,
   honorariumPercentage,
+  honorariumMinimumFee,
+  honorariumBase,
   prazoDias,
   antecipadoCliente,
   rates = DEFAULT_PROFITABILITY_RATES,
@@ -130,6 +134,8 @@ export function useProfitabilitySummary({
       internalServiceItems,
       internalServicesSubtotal,
       honorariumPercentage,
+      honorariumMinimumFee,
+      honorariumBase,
       prazoDias,
       antecipadoCliente,
       rates,
@@ -147,6 +153,8 @@ export function useProfitabilitySummary({
     categories,
     internalServicesSubtotal,
     honorariumPercentage,
+    honorariumMinimumFee,
+    honorariumBase,
     prazoDias,
     antecipadoCliente,
     rates,

@@ -1,5 +1,5 @@
 import { recalculateBudgetItemTotal } from "@/src/lib/budgetFactory";
-import { Budget, BudgetItem } from "@/src/types";
+import { Budget, BudgetItem, HONORARIUM_PERCENTAGE_OPTIONS, HonorariumPercentage, HonorariumRate } from "@/src/types";
 import {
   BillingType,
   BudgetDetail,
@@ -31,6 +31,13 @@ function emptyToUndefined(value?: string): string | undefined {
   if (value == null) return undefined;
   const trimmed = value.trim();
   return trimmed === "" ? undefined : trimmed;
+}
+
+function normalizeHonorariumPercentage(value: number | null | undefined): HonorariumRate | undefined {
+  if (value === 0) return 0;
+  return HONORARIUM_PERCENTAGE_OPTIONS.includes(value as HonorariumPercentage)
+    ? (value as HonorariumRate)
+    : undefined;
 }
 
 /** Normaliza nfReceived da API; valores legados "true"/"false" viram null. */
@@ -70,6 +77,8 @@ export function mapDetailToBudget(detail: BudgetDetail): Budget {
     participants: detail.participants ?? "",
     projectedValue: detail.projectedValue,
     taxNf: detail.taxNf,
+    honorariumPercentage: normalizeHonorariumPercentage(detail.honorariumPercentage),
+    honorariumMinimumFee: detail.honorariumMinimumFee ?? 0,
   };
 }
 
@@ -182,6 +191,8 @@ export function mapBudgetToUpdateRequest(budget: Budget): UpdateBudgetRequest {
     participants: emptyToUndefined(budget.participants),
     projectedValue: budget.projectedValue,
     paymentTerm: budget.deadline ? DEADLINE_TO_PAYMENT_TERM[budget.deadline] : undefined,
+    honorariumPercentage: budget.honorariumPercentage ?? 0,
+    honorariumMinimumFee: budget.honorariumMinimumFee ?? 0,
   };
 }
 

@@ -2,7 +2,7 @@ import { BudgetBillingSummary } from "@/src/hooks/useBudgetBillingSummary";
 import { useInternalServicesSummary } from "@/src/hooks/useInternalServicesSummary";
 import { PaymentScheduleTotals } from "@/src/hooks/usePaymentScheduleSummary";
 import { formatCurrencyBRL, formatTaxNfFactor } from "@/src/lib/formatters";
-import { HonorariumPercentage } from "@/src/types";
+import { HonorariumOption, HonorariumRate } from "@/src/types";
 import { BillingSummaryCard } from "./BillingSummaryCard";
 import { InternalServicesSummaryCard } from "./InternalServicesSummaryCard";
 import { PaymentScheduleSummaryCard } from "./PaymentScheduleSummaryCard";
@@ -17,12 +17,14 @@ interface BudgetSummaryPanelProps {
   paymentTotals: PaymentScheduleTotals;
   internalServicesSummary: InternalServicesSummary;
   honorariumBase: number;
-  honorariumPercentage: HonorariumPercentage;
+  honorariumPercentage: HonorariumRate;
+  honorariumMinimumFee: number;
   advancePayment: number;
   isLocked: boolean;
   isSaving: boolean;
   onPlanningChange: (value: number) => void;
-  onHonorariumPercentageChange: (value: HonorariumPercentage) => void;
+  onHonorariumOptionChange: (value: HonorariumOption) => void;
+  onHonorariumMinimumFeeChange: (value: number) => void;
 }
 
 export function BudgetSummaryPanel({
@@ -34,11 +36,13 @@ export function BudgetSummaryPanel({
   internalServicesSummary,
   honorariumBase,
   honorariumPercentage,
+  honorariumMinimumFee,
   advancePayment,
   isLocked,
   isSaving,
   onPlanningChange,
-  onHonorariumPercentageChange,
+  onHonorariumOptionChange,
+  onHonorariumMinimumFeeChange,
 }: BudgetSummaryPanelProps) {
   return (
     <div
@@ -74,6 +78,7 @@ export function BudgetSummaryPanel({
           fees={internalServicesSummary.fees}
           honorariumBase={honorariumBase}
           honorariumPercentage={honorariumPercentage}
+          honorariumMinimumFee={honorariumMinimumFee}
           administrativeTaxes={internalServicesSummary.administrativeTaxes}
           subtotal={internalServicesSummary.subtotal}
           serviceTax={internalServicesSummary.serviceTax}
@@ -81,7 +86,8 @@ export function BudgetSummaryPanel({
           isLocked={isLocked}
           isSaving={isSaving}
           onPlanningChange={onPlanningChange}
-          onHonorariumPercentageChange={onHonorariumPercentageChange}
+          onHonorariumOptionChange={onHonorariumOptionChange}
+          onHonorariumMinimumFeeChange={onHonorariumMinimumFeeChange}
         />
       </div>
     </div>

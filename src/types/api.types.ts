@@ -51,6 +51,8 @@ export interface ApiBudget {
   customerId: string;
   folderId: string;
   taxNf: number;
+  honorariumPercentage?: number | null;
+  honorariumMinimumFee?: number | null;
   status: BudgetStatus;
   isEditable: boolean;
   isDeletable: boolean;
@@ -85,6 +87,8 @@ export interface UpdateBudgetRequest {
   eventDate?: string;
   participants?: string;
   paymentTerm?: PaymentTerm;
+  honorariumPercentage?: number | null;
+  honorariumMinimumFee?: number | null;
 }
 
 // --- Budget Detail (GET /budgets/:id/details) ---
