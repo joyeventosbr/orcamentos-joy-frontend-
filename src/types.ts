@@ -18,6 +18,9 @@ export function isInternalServiceCategory(categoryId: string): boolean {
 export const HONORARIUM_PERCENTAGE_OPTIONS = [5, 10, 15, 20, 25] as const;
 
 export type HonorariumPercentage = (typeof HONORARIUM_PERCENTAGE_OPTIONS)[number];
+export type HonorariumRate = HonorariumPercentage | 0;
+export const MINIMUM_FEE_HONORARIUM_OPTION = "MINIMUM_FEE" as const;
+export type HonorariumOption = HonorariumPercentage | typeof MINIMUM_FEE_HONORARIUM_OPTION;
 
 export interface BudgetCategory {
   id: string;
@@ -88,7 +91,10 @@ export interface Budget {
   location?: string;
   date?: string;
   participants?: string;
-  honorariumPercentage?: HonorariumPercentage;
+  /** Taxa percentual; 0 indica que o orçamento usa Fee Mínimo. */
+  honorariumPercentage?: HonorariumRate;
+  /** Valor total dos honorários quando a taxa é 0. */
+  honorariumMinimumFee?: number;
   /** Valor de planejamento informado manualmente e persistido pela API como projectedValue. */
   projectedValue: number;
   /** Fator NF gravado na criação do orçamento (snapshot da API). */

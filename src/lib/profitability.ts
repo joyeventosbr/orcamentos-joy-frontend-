@@ -172,6 +172,8 @@ export interface ProfitabilityConsolidationInput {
   internalServiceItems?: BudgetItem[];
   internalServicesSubtotal: number;
   honorariumPercentage: number;
+  honorariumMinimumFee?: number;
+  honorariumBase: number;
   prazoDias: number;
   antecipadoCliente: number;
   rates?: ProfitabilityRates;
@@ -213,6 +215,8 @@ export function calculateProfitabilityConsolidation({
   internalServiceItems = [],
   internalServicesSubtotal,
   honorariumPercentage,
+  honorariumMinimumFee,
+  honorariumBase,
   prazoDias,
   antecipadoCliente,
   rates = DEFAULT_PROFITABILITY_RATES,
@@ -224,7 +228,7 @@ export function calculateProfitabilityConsolidation({
     sumValorTotalWhere(primaryItems, "VIA NF"),
     rates.nfJoyTaxRate,
   );
-  const honorarios = (fatViaCliente + fatViaJoy) * toRateDecimal(honorariumPercentage);
+  const honorarios = honorariumPercentage === 0 ? honorariumMinimumFee ?? 0 : honorariumBase * toRateDecimal(honorariumPercentage);
   const taxaAdmin = calculateAdministrativeTax(fatViaJoy, antecipadoCliente, prazoDias, rates.adminMonthlyRate);
   const subtotalServicos = internalServicesSubtotal + honorarios + taxaAdmin;
   const impostoNfServicos = calculateGrossUpTax(subtotalServicos, rates.nfServicesTaxRate);
