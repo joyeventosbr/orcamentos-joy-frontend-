@@ -137,7 +137,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 </th>
                 <th
                   rowSpan={2}
-                  className="sticky left-[80px] z-30 px-3 py-3 w-[200px] min-w-[200px] bg-slate-100 font-semibold shadow-[2px_0_0_0_rgb(203_213_225)]"
+                  className="sticky left-[80px] z-30 px-3 py-3 w-[200px] min-w-[200px] max-w-[200px] bg-slate-100 font-semibold shadow-[2px_0_0_0_rgb(203_213_225)]"
                 >
                   Nome do Item
                 </th>
@@ -156,7 +156,10 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 <th rowSpan={2} className="px-3 py-3 min-w-[120px] text-right font-semibold text-gray-900 bg-gray-100">
                   Unitário
                 </th>
-                <th rowSpan={2} className="px-3 py-3 min-w-[120px] text-right font-bold text-gray-900 bg-gray-200">
+                <th
+                  rowSpan={2}
+                  className="sticky left-[280px] z-30 px-3 py-3 w-[120px] min-w-[120px] max-w-[120px] text-right font-bold text-gray-900 bg-gray-200 shadow-[2px_0_0_0_rgb(203_213_225)]"
+                >
                   Valor Total
                 </th>
                 <th
@@ -228,7 +231,7 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 </th>
                 <th
                   rowSpan={2}
-                  className="sticky left-[80px] z-30 px-3 py-3 w-[200px] min-w-[200px] bg-slate-100 font-semibold shadow-[2px_0_0_0_rgb(203_213_225)]"
+                  className="sticky left-[80px] z-30 px-3 py-3 w-[200px] min-w-[200px] max-w-[200px] bg-slate-100 font-semibold shadow-[2px_0_0_0_rgb(203_213_225)]"
                 >
                   Nome do Item
                 </th>
@@ -247,7 +250,10 @@ export const BudgetSpreadsheet = React.memo(function BudgetSpreadsheet({
                 <th rowSpan={2} className="px-3 py-3 min-w-[120px] text-right font-semibold text-gray-900 bg-gray-100">
                   Unitário
                 </th>
-                <th rowSpan={2} className="px-3 py-3 min-w-[120px] text-right font-bold text-gray-900 bg-gray-200">
+                <th
+                  rowSpan={2}
+                  className="sticky left-[280px] z-30 px-3 py-3 w-[120px] min-w-[120px] max-w-[120px] text-right font-bold text-gray-900 bg-gray-200 shadow-[2px_0_0_0_rgb(203_213_225)]"
+                >
                   Valor Total
                 </th>
                 <th
