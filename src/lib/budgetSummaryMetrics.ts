@@ -25,7 +25,6 @@ export function computeBudgetCardMetrics(detail: BudgetDetail): BudgetCardMetric
   const items = detail.lines.map(mapLineToItem);
   const primaryBudgetItems = items.filter((item) => !item.categoryId.startsWith("2."));
   const internalBudgetItems = items.filter((item) => item.categoryId.startsWith("2."));
-  const honorariumBase = internalBudgetItems.reduce((sum, item) => sum + item.total, 0);
 
   const taxNfFactor = resolveTaxNfFactor(detail.taxNf);
   const taxNfRate = taxNfFactor > 0 ? 1 - taxNfFactor : 0;
@@ -36,6 +35,7 @@ export function computeBudgetCardMetrics(detail: BudgetDetail): BudgetCardMetric
   };
 
   const billingSummary = calculateBudgetBillingSummary(primaryBudgetItems, taxNfRate);
+  const honorariumBase = billingSummary.honorariumBase;
   const paymentTotals = calculatePaymentScheduleTotals(items);
   const prazoDias = detail.paymentTerm ? Number(PAYMENT_TERM_TO_DEADLINE[detail.paymentTerm]) : 0;
   const antecipadoCliente = paymentTotals.paymentAdvance;

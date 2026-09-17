@@ -146,7 +146,9 @@ export function useBudgetEditor(budgetId: string | undefined, isAdmin = false) {
 
   const billingSummary = useBudgetBillingSummary(primaryBudgetItems, taxNfRate);
   const paymentScheduleSummary = usePaymentScheduleSummary(budgetItems);
-  const honorariumBase = internalBudgetItems.reduce((sum, item) => sum + item.total, 0);
+  // Honorários incidem somente sobre fornecedores faturados via Cliente ou via Joy.
+  // Serviços internos, planejamento e impostos ficam fora dessa base.
+  const honorariumBase = billingSummary.honorariumBase;
   const honorariumPercentage = budget?.honorariumPercentage ?? 0;
   const honorariumMinimumFee = budget?.honorariumMinimumFee ?? 0;
   const prazoDias = Number(budget?.deadline) || 0;
