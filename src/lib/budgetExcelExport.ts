@@ -6,6 +6,7 @@ import {
 } from "@/src/hooks/usePaymentScheduleSummary";
 import { Budget, BudgetItem } from "@/src/types";
 import { resolvePercentNfBV, resolveTaxNfFactor } from "@/src/lib/profitability";
+import { shouldShowBudgetVersion } from "@/src/lib/budgetStatus";
 
 /**
  * Exporta um orçamento para um arquivo .xlsx idêntico à planilha BASE da Joy.
@@ -314,12 +315,9 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   // --- 10. Download. ---
   const out = await workbook.xlsx.writeBuffer();
   const { saveAs } = await import("file-saver");
-  const suffix = variant === "internal" ? " (INTERNA)" : " (COMERCIAL)";
-  // Data/hora no nome garante arquivo único por exportação (evita abrir um download antigo).
-  const n = new Date();
-  const p = (v: number) => String(v).padStart(2, "0");
-  const stamp = `${p(n.getDate())}-${p(n.getMonth() + 1)}-${n.getFullYear()} ${p(n.getHours())}h${p(n.getMinutes())}`;
-  const fileName = `Orçamento - ${sanitize(budget.client) || "sem-cliente"} - ${sanitize(budget.name) || "orcamento"}${suffix} - ${stamp}.xlsx`;
+  const variantName = variant === "internal" ? "Interna" : "Comercial";
+  const version = shouldShowBudgetVersion(budget) ? ` V${budget.version}` : "";
+  const fileName = `Orçamento Geral Joy Eventos_${sanitize(budget.client) || "sem-cliente"} - ${sanitize(budget.name) || "orcamento"} - ${variantName}${version}.xlsx`;
   saveAs(
     new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
     fileName,
