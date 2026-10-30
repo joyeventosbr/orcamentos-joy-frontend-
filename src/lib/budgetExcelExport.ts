@@ -317,7 +317,7 @@ export async function exportBudgetToExcel(budget: Budget, variant: ExcelExportVa
   const { saveAs } = await import("file-saver");
   const variantName = variant === "internal" ? "Interna" : "Comercial";
   const version = shouldShowBudgetVersion(budget) ? ` V${budget.version}` : "";
-  const fileName = `Orçamento Geral Joy Eventos_${sanitize(budget.client) || "sem-cliente"} - ${sanitize(budget.name) || "orcamento"} - ${variantName}${version}.xlsx`;
+  const fileName = `${sanitize(budget.client) || "sem-cliente"} - ${sanitize(budget.name) || "orcamento"} - ${variantName}${version}.xlsx`;
   saveAs(
     new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
     fileName,
