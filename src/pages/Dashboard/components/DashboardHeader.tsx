@@ -6,6 +6,7 @@ interface DashboardHeaderProps {
   currentCustomer: Customer | null;
   currentFolder: Folder | null;
   onBack: () => void;
+  canCreate?: boolean;
   onNew: () => void;
   newButtonLabel: string;
 }
@@ -16,6 +17,7 @@ export function DashboardHeader({
   onBack,
   onNew,
   newButtonLabel,
+  canCreate = true,
 }: DashboardHeaderProps) {
   const showBack = !!currentCustomer;
 
@@ -46,10 +48,10 @@ export function DashboardHeader({
           <h1 className="text-xl font-semibold text-gray-900 tracking-tight truncate">{title}</h1>
         </div>
       </div>
-      <Button onClick={onNew} className="gap-2 shrink-0">
+      {canCreate && <Button onClick={onNew} className="gap-2 shrink-0">
         <Plus size={16} />
         {newButtonLabel}
-      </Button>
+      </Button>}
     </header>
   );
 }

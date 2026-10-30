@@ -1,3 +1,4 @@
+import { JobAccessFields } from "./JobAccessFields";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Input } from "@/src/components/ui/Input/Input";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,19 +23,20 @@ export function CreateUserModal({
 
   const {
     register,
+    setValue,
     handleSubmit,
     watch,
     formState: { errors },
   } = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
-    defaultValues: { name: "", email: "", role: "customer", roleDescription: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", email: "", role: "customer", roleDescription: "", folderIds: [], password: "", confirmPassword: "" },
   });
 
   const role = watch("role");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-gray-900">Novo usuário</h3>
           <button type="button" onClick={onCancel} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -63,10 +65,13 @@ export function CreateUserModal({
               {...register("role")}
             >
               <option value="customer">Usuário</option>
+              <option value="temporary">Temporário</option>
               <option value="admin">Administrador</option>
             </select>
             {errors.role && <p className="text-xs text-red-500">{errors.role.message}</p>}
           </div>
+
+          {role === "temporary" && <JobAccessFields value={watch("folderIds") ?? []} onChange={value => setValue("folderIds", value, { shouldValidate: true })} error={errors.folderIds?.message} />}
 
           {role === "customer" && (
             <div className="space-y-1.5">

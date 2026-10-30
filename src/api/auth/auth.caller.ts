@@ -5,10 +5,12 @@ import { authKeys } from './auth.keys';
 import { authReq } from './auth.req';
 
 export function useLoginMutation() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: authKeys.mutations.login,
     mutationFn: authReq.login,
     onSuccess: (data) => {
+      queryClient.clear();
       useAuthStore.getState().setAuth(data.token, data.user);
     },
   });
@@ -51,5 +53,13 @@ export function useDeleteUserMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authKeys.queries.users });
     },
+  });
+}
+
+export function useUpdateUserAccessMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; folderIds: string[]; isActive: boolean }) => authReq.updateAccess(id, body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: authKeys.queries.users }),
   });
 }

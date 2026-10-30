@@ -4,11 +4,13 @@ export const createUserSchema = z
   .object({
     name: z.string().min(3, 'Nome deve ter ao menos 3 caracteres'),
     email: z.string().email('E-mail inválido'),
-    role: z.enum(['customer', 'admin']),
+    role: z.enum(['customer', 'admin', 'temporary']),
+    folderIds: z.array(z.string()).optional(),
     roleDescription: z.string().optional(),
     password: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
     confirmPassword: z.string(),
   })
+  .refine(data => data.role !== 'temporary' || (data.folderIds?.length ?? 0) > 0, { message: 'Selecione pelo menos um job', path: ['folderIds'] })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'As senhas não coincidem',
     path: ['confirmPassword'],

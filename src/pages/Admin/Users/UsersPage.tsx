@@ -1,4 +1,4 @@
-import { useDeleteUserMutation, useListUsersQuery, useRegisterAdminMutation, useRegisterUserMutation } from "@/src/api/auth/auth.caller";
+import { useUpdateUserAccessMutation, useDeleteUserMutation, useListUsersQuery, useRegisterAdminMutation, useRegisterUserMutation } from "@/src/api/auth/auth.caller";
 import { Badge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/Card/Card";
@@ -7,11 +7,14 @@ import { AuthUser, UserRole } from "@/src/types/auth.types";
 import { Loader2, Mail, Plus, Shield, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { EditUserAccessModal } from "./EditUserAccessModal";
 import { CreateUserModal } from "./CreateUserModal";
 import { DeleteUserModal } from "./DeleteUserModal";
 import { CreateUserFormValues } from "./user.schema";
 
 export function UsersPage() {
+  const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
+  const updateAccess = useUpdateUserAccessMutation();
   const { currentUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AuthUser | null>(null);
@@ -40,7 +43,7 @@ export function UsersPage() {
       );
     } else {
       registerUserMutation.mutate(
-        { name: data.name, email: data.email, password: data.password, roleDescription: data.roleDescription! },
+        { name: data.name, email: data.email, password: data.password, roleDescription: data.role === "temporary" ? "Freelancer" : data.roleDescription!, ...(data.role === "temporary" ? { role: UserRole.TEMPORARY, folderIds: data.folderIds } : {}) },
         { onSuccess: () => onSuccess(data.name), onError },
       );
     }
@@ -151,13 +154,14 @@ export function UsersPage() {
                         </td>
                         <td className="px-6 py-4">
                           <Badge variant={user.role === UserRole.ADMIN ? "default" : "neutral"}>
-                            {user.role === UserRole.ADMIN ? "Administrador" : "Cliente"}
+                            {user.role === UserRole.ADMIN ? "Administrador" : user.role === UserRole.TEMPORARY ? "Temporário" : "Cliente"}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 text-gray-500 text-xs">
                           {user.funcao ?? <span className="text-gray-300">—</span>}
                         </td>
                         <td className="px-6 py-4 text-right">
+                          {user.role === UserRole.TEMPORARY && <Button size="sm" variant="outline" onClick={() => setEditingUser(user)}>Gerenciar acesso{user.isActive === false ? " (desativado)" : ""}</Button>}
                           <Button
                             size="sm"
                             variant="ghost"
@@ -179,6 +183,8 @@ export function UsersPage() {
           </CardContent>
         </Card>
       </div>
+
+      {editingUser && <EditUserAccessModal user={editingUser} pending={updateAccess.isPending} onCancel={() => setEditingUser(null)} onSave={body => updateAccess.mutate({ id: editingUser.id, ...body }, { onSuccess: () => { setEditingUser(null); toast.success("Acesso atualizado"); }, onError })} />}
 
       {isModalOpen && (
         <CreateUserModal onCancel={() => setIsModalOpen(false)} onSubmit={handleCreateUser} isSubmitting={isPending} />
