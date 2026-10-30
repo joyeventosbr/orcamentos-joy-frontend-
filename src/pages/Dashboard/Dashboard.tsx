@@ -1,3 +1,5 @@
+import { useAuthStore } from "@/src/store/auth.store";
+import { UserRole } from "@/src/types/auth.types";
 import { useDashboardFilters } from "@/src/hooks/useDashboardFilters";
 import { buildDashboardReturnState, DashboardReturnState } from "@/src/lib/dashboardNavigation";
 import { BUDGET_FOLDER_OPTIONS, BudgetFolder } from "@/src/types";
@@ -19,6 +21,7 @@ import { JobsView } from "./components/JobsView";
 type DashboardLevel = "customers" | "folders" | "budgets";
 
 export function Dashboard() {
+  const isTemporary = useAuthStore(s => s.currentUser?.role === UserRole.TEMPORARY);
   const navigate = useNavigate();
   const location = useLocation();
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
@@ -296,6 +299,7 @@ export function Dashboard() {
         onBack={handleBack}
         onNew={handleNew}
         newButtonLabel={newButtonLabel}
+        canCreate={!isTemporary || level === "budgets"}
       />
 
       <DashboardToolbar

@@ -15,6 +15,9 @@ export const authReq = {
   listUsers: () =>
     apiClient.get<AuthUser[]>(API_ENDPOINTS.auth.users).then((r) => r.data),
 
+  updateAccess: (id: string, body: { folderIds: string[]; isActive: boolean }) =>
+    apiClient.patch(API_ENDPOINTS.auth.userAccess(id), body).then(() => undefined),
+
   deleteUser: (id: string) =>
     apiClient.delete(API_ENDPOINTS.auth.deleteUser(id)).then(() => undefined),
 };

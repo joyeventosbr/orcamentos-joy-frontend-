@@ -1,6 +1,7 @@
 export enum UserRole {
   CUSTOMER = 1,
   ADMIN = 2,
+  TEMPORARY = 3,
 }
 
 export interface AuthUser {
@@ -9,6 +10,8 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   funcao?: string;
+  folderIds?: string[];
+  isActive?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -24,6 +27,8 @@ export interface LoginCredentials {
 }
 
 export interface RegisterUserRequest {
+  role?: UserRole.TEMPORARY;
+  folderIds?: string[];
   name: string;
   email: string;
   password: string;
